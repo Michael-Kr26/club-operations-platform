@@ -9,7 +9,7 @@ afterEach(() => {
 });
 
 describe('App', () => {
-  it('shows that the API is online after a successful health check', async () => {
+  it('renders the application shell and online API status', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -20,7 +20,6 @@ describe('App', () => {
         { status: 200 },
       ),
     );
-
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -32,5 +31,11 @@ describe('App', () => {
     );
 
     expect(await screen.findByText('API online')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Goedemiddag, Michael' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: 'Hoofdnavigatie' }),
+    ).toBeInTheDocument();
   });
 });
