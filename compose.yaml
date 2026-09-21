@@ -1,0 +1,26 @@
+name: cop-local
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cop}
+      POSTGRES_USER: ${POSTGRES_USER:-cop}
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-cop} -d ${POSTGRES_DB:-cop}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - '5432:5432'
+    restart: unless-stopped
+    volumes:
+      - cop_postgres_data:/var/lib/postgresql
+
+volumes:
+  cop_postgres_data:
