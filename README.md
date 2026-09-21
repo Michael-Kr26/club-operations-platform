@@ -4,7 +4,7 @@ COP is een multi-tenant operationeel platform voor fitnessclubs. Sport Society w
 
 ## Status
 
-De repository bevat op dit moment uitsluitend de technische en architecturale fundering. Er is nog geen applicatiecode of productieomgeving.
+De technische bootstrap bevat een werkende webapp, API-healthcheck, gedeelde contractpackage en database-infrastructuur. Er zijn bewust nog geen functionele COP-modules of productiedata.
 
 ## Beoogde stack
 
@@ -40,4 +40,25 @@ scripts/                Projectautomatisering
 
 ## Volgende stap
 
-Na goedkeuring van deze foundation worden `apps/web`, `apps/api` en `packages/db` afzonderlijk gebootstrapt. Functionele modules volgen pas nadat authenticatie, tenantcontext en autorisatie betrouwbaar zijn ingericht.
+### Lokale start
+
+```powershell
+Copy-Item .env.example .env
+pnpm install
+pnpm db:up
+pnpm dev
+```
+
+Daarna zijn beschikbaar:
+
+- web: `http://localhost:5173`
+- API-healthcheck: `http://localhost:3000/api/v1/health`
+- PostgreSQL: `localhost:5432`
+
+Alle lokale kwaliteitscontroles draaien met:
+
+```powershell
+pnpm verify
+```
+
+Functionele modules volgen pas nadat authenticatie, tenantcontext en autorisatie betrouwbaar zijn ingericht.

@@ -3,8 +3,33 @@
   "version": "0.0.0",
   "private": true,
   "description": "Multi-tenant operations platform for fitness clubs.",
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "build:packages": "pnpm --filter @cop/contracts build && pnpm --filter @cop/db build",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "db:up": "docker compose up -d postgres",
+    "dev": "pnpm --parallel --filter @cop/api --filter @cop/web dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm build:packages && pnpm -r --if-present typecheck",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
   "engines": {
     "node": ">=24 <25"
   },
-  "packageManager": "pnpm@10.17.1"
+  "packageManager": "pnpm@10.17.1",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.13.6",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.8",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0"
+  }
 }
