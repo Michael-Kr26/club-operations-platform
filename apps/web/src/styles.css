@@ -441,6 +441,63 @@ h1 {
   white-space: nowrap;
 }
 
+.locations-section {
+  margin-top: 18px;
+}
+
+.locations-section h2 {
+  margin: 0 0 12px;
+  color: var(--slate-900);
+  font-size: 1.15rem;
+}
+
+.locations-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.location-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e3e6ea;
+  border-radius: 14px;
+  color: var(--slate-700);
+  text-align: left;
+  background: var(--white);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 3%);
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.location-card:hover {
+  border-color: #b9cdf8;
+  box-shadow: 0 8px 20px rgb(37 99 235 / 10%);
+  transform: translateY(-2px);
+}
+
+.location-card > .icon:first-child {
+  color: var(--blue-600);
+}
+
+.location-card > .icon:last-child {
+  color: var(--slate-300);
+}
+
+.location-card strong {
+  overflow: hidden;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(310px, 0.85fr);
@@ -632,6 +689,9 @@ h1 {
 }
 
 @media (max-width: 1080px) {
+    .locations-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .metrics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -672,6 +732,9 @@ h1 {
 }
 
 @media (max-width: 540px) {
+    .locations-grid {
+    grid-template-columns: 1fr;
+  }
   .page-heading {
     flex-direction: column;
   }

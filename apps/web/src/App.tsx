@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import type { HealthResponse } from '@cop/contracts';
 import type { ReactNode } from 'react';
@@ -104,6 +105,14 @@ function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   );
 }
 
+const locations = [
+  { name: 'Achterveld', slug: 'achterveld' },
+  { name: 'Barneveld', slug: 'barneveld' },
+  { name: 'Voorthuizen', slug: 'voorthuizen' },
+  { name: 'Harskamp', slug: 'harskamp' },
+  { name: 'Wekerom', slug: 'wekerom' }
+];
+
 const primaryNavigation: Array<{
   icon: IconName;
   label: string;
@@ -143,6 +152,24 @@ const modules: Array<{ description: string; icon: IconName; title: string }> = [
     title: 'Operationele taken',
   },
 ];
+
+type LocationCardProps = {
+  name: string;
+  slug: string;
+};
+
+function LocationCard({ name, slug }: LocationCardProps) {
+  return (
+    <Link
+      className="location-card"
+      to={`/locaties/${slug}`}
+    >
+      <Icon name="building" />
+      <strong>{name}</strong>
+      <Icon name="chevron" size={17} />
+    </Link>
+  );
+}
 
 export function App() {
   const health = useQuery({
@@ -289,7 +316,7 @@ export function App() {
             </article>
             <article className="metric-card">
               <span className="metric-card__label">Locaties</span>
-              <strong>—</strong>
+              <strong>{locations.length}</strong>
               <small>Nog geen clubdata gekoppeld</small>
             </article>
             <article className="metric-card metric-card--accent">
@@ -304,6 +331,20 @@ export function App() {
               </strong>
               <small>Live gecontroleerd via de API</small>
             </article>
+          </section>
+
+          <section className="locations-section">
+            <h2>Locaties</h2>
+
+            <div className="locations-grid">
+              {locations.map((location) => (
+               <LocationCard
+                  key={location.slug}
+                  name={location.name}
+                  slug={location.slug}
+                />
+              ))}
+            </div>
           </section>
 
           <div className="dashboard-grid">
