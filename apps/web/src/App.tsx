@@ -1,8 +1,15 @@
+import type { UserRole } from './auth/types';
 import { currentRoleAssignment } from './auth/mockCurrentUser';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import type { HealthResponse } from '@cop/contracts';
 import type { ReactNode } from 'react';
+
+const roleLabels: Record<UserRole, string> = {
+  admin: 'Beheerder',
+  manager: 'Locatiemanager',
+  employee: 'Medewerker',
+};
 
 async function fetchHealth(): Promise<HealthResponse> {
   const response = await fetch('/api/v1/health');
@@ -173,6 +180,8 @@ function LocationCard({ name, slug }: LocationCardProps) {
 }
 
 export function App() {
+
+  const isAdmin = currentRoleAssignment.role === 'admin';
   const health = useQuery({
     queryFn: fetchHealth,
     queryKey: ['api-health'],
@@ -252,7 +261,7 @@ export function App() {
             <span className="profile__avatar">MK</span>
             <span>
               <strong>Michael</strong>
-              <small>{currentRoleAssignment.role}</small>
+              <small>{roleLabels[currentRoleAssignment.role]}</small>
             </span>
           </div>
         </div>
@@ -334,19 +343,21 @@ export function App() {
             </article>
           </section>
 
-          <section className="locations-section">
-            <h2>Locaties</h2>
+          {isAdmin && (
+            <section className="locations-section">
+              <h2>Locaties</h2>
 
-            <div className="locations-grid">
-              {locations.map((location) => (
-               <LocationCard
-                  key={location.slug}
-                  name={location.name}
-                  slug={location.slug}
-                />
-              ))}
-            </div>
-          </section>
+              <div className="locations-grid">
+                {locations.map((location) => (
+                  <LocationCard
+                    key={location.slug}
+                    name={location.name}
+                    slug={location.slug}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
           <div className="dashboard-grid">
             <section className="panel panel--modules">
