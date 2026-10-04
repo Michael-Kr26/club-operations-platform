@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -25,9 +26,11 @@ describe('App', () => {
     });
 
     render(
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>,
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
+      </MemoryRouter>,
     );
 
     expect(await screen.findByText('API online')).toBeInTheDocument();

@@ -1,3 +1,4 @@
+import { currentRoleAssignment } from './auth/mockCurrentUser';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import type { HealthResponse } from '@cop/contracts';
@@ -251,7 +252,7 @@ export function App() {
             <span className="profile__avatar">MK</span>
             <span>
               <strong>Michael</strong>
-              <small>Beheerder</small>
+              <small>{currentRoleAssignment.role}</small>
             </span>
           </div>
         </div>
