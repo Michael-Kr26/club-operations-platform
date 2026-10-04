@@ -182,6 +182,18 @@ function LocationCard({ name, slug }: LocationCardProps) {
 export function App() {
 
   const isAdmin = currentRoleAssignment.role === 'admin';
+  const assignedLocationSlug =
+  currentRoleAssignment.role === 'manager'
+    ? currentRoleAssignment.locationSlug
+    : undefined;
+
+    const assignedLocation =
+      assignedLocationSlug !== undefined
+        ? locations.find(
+        (location) => location.slug === assignedLocationSlug,
+      )
+    : undefined;
+
   const health = useQuery({
     queryFn: fetchHealth,
     queryKey: ['api-health'],
@@ -262,6 +274,7 @@ export function App() {
             <span>
               <strong>Michael</strong>
               <small>{roleLabels[currentRoleAssignment.role]}</small>
+              {assignedLocation && <small>{assignedLocation.name}</small>}
             </span>
           </div>
         </div>
