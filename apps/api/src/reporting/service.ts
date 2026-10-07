@@ -33,6 +33,11 @@ import {
 } from './calculation.js';
 import { CanonicalFileAdapter } from './adapters.js';
 import { LocalTestMailer, previewMail } from './mail.js';
+import {
+  loadMicrosoftConfig,
+  Microsoft365Mailer,
+  checkRealRecipients,
+} from './microsoft-mail.js';
 import { deliver, dueRuns, scheduledRun } from './delivery.js';
 
 export const WEB_ORIGIN = process.env.WEB_URL ?? 'http://localhost:5173';
@@ -74,6 +79,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
   readonly dataDirectory = process.env.COP_DATA_DIR ?? join(homedir(), '.cop');
   auth!: ReturnType<typeof betterAuth>;
   ready = false;
+  private initializationError: string | null = null;
   private timer: ReturnType<typeof setInterval> | undefined;
   private ticking = false;
   private setupToken = '';
@@ -127,7 +133,18 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       this.timer = setInterval(() => void this.tick(), 30_000);
       this.timer.unref();
       void this.tick();
-    } catch {
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+      this.initializationError =
+        code === '42P01'
+          ? 'Rapportagetabellen ontbreken. Voer pnpm.cmd --filter @cop/db db:migrate uit en herstart COP.'
+          : code === '28P01'
+            ? 'PostgreSQL weigert de aanmelding. Controleer de lokale database-instellingen.'
+            : ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT'].includes(code ?? '')
+              ? 'PostgreSQL is niet bereikbaar. Start Docker en controleer de databasecontainer.'
+              : ['EACCES', 'EPERM'].includes(code ?? '')
+                ? 'COP kan zijn lokale gegevensmap niet lezen of schrijven.'
+                : 'Rapportage-initialisatie mislukt. Controleer de database, migraties en lokale gegevensmap.';
       this.ready = false; /* Do not log database URLs/secrets or private records. Health endpoint remains available. */
     }
   }
@@ -145,7 +162,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         this.ready && this.setupToken
           ? join(this.dataDirectory, 'setup-token')
           : null,
-      delivery: 'local-test-only',
+      initializationError: this.initializationError,
       lastTick: this.lastTick,
       schedulerError: this.schedulerError,
     };
@@ -367,7 +384,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       (!settings.rulesApproved || !settings.recipients.length)
     )
       throw new BadRequestException(
-        'Keur de voorstellen goed en vul ontvangers in vóór planning. Alleen lokale testopvang.',
+        'Keur de voorstellen goed en vul ontvangers in vóór planning.',
       );
     await this.store.saveSettings(
       principal.organizationId,
@@ -443,6 +460,73 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       );
     return results;
   }
+  async mailStatus(principal: Principal) {
+    requirePermission(principal, principal.organizationId, 'reports.manage');
+    try {
+      const config = await loadMicrosoftConfig(
+        this.dataDirectory,
+        principal.organizationId,
+      );
+      return {
+        ready: !!config,
+        delivery: config ? 'microsoft365' : 'local-test-only',
+        sender: config?.mailbox ?? null,
+        error: null,
+      };
+    } catch {
+      return {
+        ready: false,
+        delivery: 'local-test-only',
+        sender: null,
+        error: 'Lokale Microsoft 365-configuratie ongeldig of niet leesbaar.',
+      };
+    }
+  }
+  async send(
+    principal: Principal,
+    dataset: Dataset,
+    kind: 'daily' | 'monthly',
+    date: string,
+  ) {
+    requirePermission(principal, principal.organizationId, 'reports.manage');
+    if (dataset !== 'real')
+      throw new BadRequestException(
+        'Demo-gegevens worden nooit via echte mail verzonden.',
+      );
+    const config = await loadMicrosoftConfig(
+      this.dataDirectory,
+      principal.organizationId,
+    );
+    if (!config)
+      throw new BadRequestException(
+        'Microsoft 365 is nog niet lokaal ingesteld.',
+      );
+    const report = await this.report(principal, dataset, kind, date);
+    const settings = await this.store.settings(principal.organizationId);
+    if (
+      report.provisional ||
+      report.warnings.length ||
+      report.sources.some((s) => s.status !== 'ready')
+    )
+      throw new BadRequestException(
+        'Echte verzending vereist goedgekeurde bedrijfsregels en complete geldige bronnen.',
+      );
+    try {
+      checkRealRecipients(config, settings.recipients);
+    } catch {
+      throw new BadRequestException(
+        'Controleer ontvangers en de lokale toegestane ontvangers.',
+      );
+    }
+    return deliver(
+      this.store,
+      new Microsoft365Mailer(config),
+      principal.organizationId,
+      report,
+      settings,
+      principal.userId,
+    );
+  }
   async capture(
     principal: Principal,
     dataset: Dataset,
@@ -473,6 +557,13 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         principal.locations === null
         ? (await this.store.settings(principal.organizationId)).recipients
         : [],
+      dataset === 'real' &&
+        (await loadMicrosoftConfig(
+          this.dataDirectory,
+          principal.organizationId,
+        ))
+        ? 'microsoft365'
+        : 'local-test-only',
     );
   }
   async tick(now = new Date()) {
@@ -487,6 +578,14 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         const org = await this.organization(r.organization_id);
         const settings = await this.store.settings(org.id);
         if (!settings.enabled) continue;
+        let config: Awaited<ReturnType<typeof loadMicrosoftConfig>> = null;
+        let mailError = false;
+        try {
+          config = await loadMicrosoftConfig(this.dataDirectory, org.id);
+          if (config) checkRealRecipients(config, settings.recipients);
+        } catch {
+          mailError = true;
+        }
         for (const run of dueRuns(now, settings.time)) {
           const date = reportPeriod(run.kind, run.date).from;
           const report = calculateReport(
@@ -498,9 +597,21 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
             settings,
             now,
           );
+          if (mailError && !run.missed) {
+            await this.store.claim(
+              org.id,
+              'real',
+              run.kind,
+              report.from,
+              'scheduler',
+              'blocked',
+              'Microsoft 365-configuratie of toegestane ontvangers ongeldig. Controleer lokale mailinstellingen.',
+            );
+            continue;
+          }
           await scheduledRun(
             this.store,
-            new LocalTestMailer(),
+            config ? new Microsoft365Mailer(config) : new LocalTestMailer(),
             org.id,
             run,
             report,

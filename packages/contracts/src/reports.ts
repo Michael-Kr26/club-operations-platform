@@ -116,14 +116,14 @@ export interface MailPreview {
   text: string;
   html: string;
   recipients: string[];
-  delivery: 'local-test-only';
+  delivery: 'local-test-only' | 'microsoft365';
 }
 export interface SendRun {
   id: string;
   kind: 'daily' | 'monthly';
   reportDate: string;
   dataset: Dataset;
-  status: 'claimed' | 'captured' | 'missed' | 'blocked' | 'uncertain';
+  status: 'claimed' | 'captured' | 'sent' | 'missed' | 'blocked' | 'uncertain';
   createdAt: string;
   completedAt: string | null;
   reason: string | null;

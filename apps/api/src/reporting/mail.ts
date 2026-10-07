@@ -48,6 +48,7 @@ export function formatMetric(key: keyof Metrics, value: number | null) {
 export function previewMail(
   report: ManagementReport,
   recipients: string[],
+  delivery: MailPreview['delivery'] = 'local-test-only',
 ): MailPreview {
   const subject = `${report.dataset === 'demo' ? '[DEMO] ' : ''}${report.provisional ? '[VOORSTEL] ' : ''}${report.organization.name} · ${report.kind === 'monthly' ? 'Maandrapport & churn' : 'Ochtendrapport'} · ${report.from} t/m ${report.through}`;
   const cols = [
@@ -75,12 +76,14 @@ export function previewMail(
     ...report.warnings,
     ...attention,
     'Uitstroom: effectieve einddatum; churn: uitstroom / actieve leden bij aanvang van de maand.',
-    'Alleen lokale testmailopvang. Er wordt geen internetmail verstuurd.',
+    delivery === 'local-test-only'
+      ? 'Alleen lokale testmailopvang. Er wordt geen internetmail verstuurd.'
+      : 'Verzending via Microsoft 365; SMTP-acceptatie bevestigt geen aflevering in de inbox.',
   ];
   return {
     subject,
     recipients,
-    delivery: 'local-test-only',
+    delivery,
     text: [
       subject,
       cols.map((c) => c.name).join(' | '),
@@ -91,6 +94,7 @@ export function previewMail(
   };
 }
 export interface TestMailer {
+  readonly delivery?: MailPreview['delivery'];
   capture(preview: MailPreview, id: string): Promise<void>;
 }
 export class LocalTestMailer implements TestMailer {

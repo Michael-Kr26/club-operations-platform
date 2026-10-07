@@ -151,7 +151,7 @@ export const reportRuns = pgTable(
     check('report_run_kind', sql`${t.kind} IN ('daily','monthly')`),
     check(
       'report_run_status',
-      sql`${t.status} IN ('claimed','captured','missed','blocked','uncertain')`,
+      sql`${t.status} IN ('claimed','captured','sent','missed','blocked','uncertain')`,
     ),
   ],
 );

@@ -103,6 +103,7 @@ export function ReportsPage() {
     queryKey: ['reporting-status'],
     queryFn: () =>
       api<{
+        initializationError?: string | null;
         ready: boolean;
         setupRequired: boolean;
         setupTokenFile: string | null;
@@ -122,6 +123,18 @@ export function ReportsPage() {
   const manage =
     access.data?.permissions.includes('reports.manage') &&
     access.data.locations === null;
+  const mailStatus = useQuery({
+    queryKey: ['reports-mail-status', org],
+    queryFn: () =>
+      api<{
+        ready: boolean;
+        delivery: string;
+        sender: string | null;
+        error: string | null;
+      }>(`${base}/mail-status`),
+    enabled: !!manage,
+    retry: false,
+  });
   const query = `dataset=${dataset}&kind=${kind}&date=${date}`;
   const report = useQuery({
     queryKey: ['reports', org, dataset, kind, date],
@@ -182,15 +195,20 @@ export function ReportsPage() {
           <h1>Ochtendrapport & churn</h1>
           <p>Alle clubs naast elkaar, met controleerbare bronnen en datums.</p>
         </div>
-        <span className="badge">Alleen lokale testmail</span>
+        <span className="badge">
+          {mailStatus.data?.ready
+            ? 'Microsoft 365 ingesteld'
+            : 'Lokale testmail'}
+        </span>
       </section>
       <p className="report-notice">
-        Echte e-mailverzending en live bronkoppelingen zijn uitgeschakeld.
-        Testmails blijven in{' '}
+        {mailStatus.data?.ready
+          ? `Echte verzending is ingesteld via ${mailStatus.data.sender}. Live bronkoppelingen zijn nog niet beschikbaar.`
+          : 'Echte mail is nog niet ingesteld. Testmails blijven in de lokale opvang.'}{' '}
         <a href="http://localhost:8025" target="_blank" rel="noreferrer">
-          lokale mailopvang
+          Lokale mailopvang
         </a>
-        .
+        .{mailStatus.data?.error}
       </p>
       {message && (
         <p role="status" className="report-notice">
@@ -203,7 +221,7 @@ export function ReportsPage() {
           <p>
             Start PostgreSQL, voer{' '}
             <code>pnpm.cmd --filter @cop/db db:migrate</code> uit en herstart
-            COP. {status.error?.message}
+            COP. {status.data?.initializationError ?? status.error?.message}
           </p>
           <button
             onClick={() => void client.invalidateQueries()}
@@ -504,7 +522,9 @@ export function ReportsPage() {
             <p>
               Voorbeeldontvangers:{' '}
               {preview.data?.recipients.join(', ') || 'nog niet ingesteld'}.
-              SMTP-ontvanger: opvang@localhost.invalid.
+              {mailStatus.data?.ready
+                ? `Afzender: ${mailStatus.data.sender}.`
+                : 'Testmail gaat naar opvang@localhost.invalid.'}
             </p>
             {preview.error && <p role="alert">{preview.error.message}</p>}
             {preview.data && (
@@ -523,6 +543,38 @@ export function ReportsPage() {
                   <pre>{preview.data.text}</pre>
                 </details>
               </>
+            )}
+            {manage && mailStatus.data?.ready && (
+              <button
+                className="button button--primary"
+                disabled={
+                  busy ||
+                  dataset !== 'real' ||
+                  !preview.data ||
+                  !report.data ||
+                  report.data.provisional ||
+                  !!report.data.warnings.length
+                }
+                onClick={() =>
+                  void action(async () => {
+                    const r = await api<{
+                      duplicate?: boolean;
+                      status?: string;
+                    }>(`${base}/send`, { dataset, kind, date });
+                    if (r.duplicate)
+                      throw new Error(
+                        'Deze periode is al geregistreerd; geen herverzending.',
+                      );
+                    if (r.status !== 'sent')
+                      throw new Error(
+                        'Verzending onzeker. Controleer de historie; geen automatische retry.',
+                      );
+                    return r;
+                  }, 'Microsoft 365 heeft de mail geaccepteerd. Dit bevestigt nog geen inboxaflevering.')
+                }
+              >
+                Echt versturen naar ingestelde ontvangers
+              </button>
             )}
             {manage && (
               <button
@@ -837,6 +889,7 @@ export function ReportsPage() {
                               {
                                 claimed: 'Bezig',
                                 captured: 'Lokaal opgevangen',
+                                sent: 'Door mailprovider geaccepteerd',
                                 missed: 'Gemist',
                                 blocked: 'Geblokkeerd',
                                 uncertain: 'Onzeker',
@@ -845,7 +898,10 @@ export function ReportsPage() {
                           </td>
                           <td>{timestamp(r.completedAt ?? r.createdAt)}</td>
                           <td>
-                            {r.reason ?? 'Alleen lokale testmail'}
+                            {r.reason ??
+                              (r.status === 'sent'
+                                ? 'Microsoft 365 · inboxaflevering niet bevestigd'
+                                : 'Lokale testmail')}
                             {r.preview && (
                               <details>
                                 <summary>Opgeslagen mail</summary>

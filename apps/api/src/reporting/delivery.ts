@@ -20,7 +20,7 @@ export async function deliver(
     actor,
   );
   if (!id) return { duplicate: true };
-  const preview = previewMail(report, settings.recipients);
+  const preview = previewMail(report, settings.recipients, mailer.delivery);
   await store.attachPreview(organizationId, id, preview);
   // Manual test capture may include unknown/provisional values, but scheduler explicitly blocks these.
   try {
@@ -31,12 +31,13 @@ export async function deliver(
       id,
       'uncertain',
       preview,
-      'Lokale SMTP-opvang niet bevestigd. Controleer Mailpit; geen automatische retry vanwege mogelijk ontvangen bericht.',
+      'SMTP-acceptatie niet bevestigd. Controleer verzendhistorie en mailprovider; geen automatische retry vanwege mogelijk ontvangen bericht.',
     );
     return { id, status: 'uncertain' };
   }
-  await store.finish(organizationId, id, 'captured', preview, null);
-  return { id, status: 'captured' };
+  const status = mailer.delivery === 'microsoft365' ? 'sent' : 'captured';
+  await store.finish(organizationId, id, status, preview, null);
+  return { id, status };
 }
 export function dueRuns(
   now: Date,

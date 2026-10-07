@@ -1,0 +1,2 @@
+ALTER TABLE "report_runs" DROP CONSTRAINT "report_run_status";--> statement-breakpoint
+ALTER TABLE "report_runs" ADD CONSTRAINT "report_run_status" CHECK ("report_runs"."status" IN ('claimed','captured','sent','missed','blocked','uncertain'));

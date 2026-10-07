@@ -8,6 +8,13 @@
       "when": 1791375731687,
       "tag": "0000_local_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791392306997,
+      "tag": "0001_microsoft_mail",
+      "breakpoints": true
     }
   ]
 }

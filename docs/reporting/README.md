@@ -1,6 +1,6 @@
 # Managementrapportages lokaal gebruiken
 
-Deze eerste versie draait in COP op localhost. Geen betaalde dienst of AI/API-credits nodig. Bewaren gebeurt in je lokale PostgreSQL-volume; mailopvang in het lokale Mailpit-volume. Dit is een **werkende import- en testmailversie**, geen live koppeling en nog geen echte ochtendmail naar Chico.
+Deze eerste versie draait in COP op localhost. Geen betaalde dienst of AI/API-credits nodig. Bewaren gebeurt in je lokale PostgreSQL-volume; mailopvang in het lokale Mailpit-volume. Dit is een **lokale import- en rapportageversie**, zonder live leverancierskoppelingen. Echte Microsoft 365-verzending is optioneel beschikbaar: [OAuth en mailboxrechten instellen](MICROSOFT365.md). Zonder die configuratie blijft mail uitsluitend lokaal.
 
 ## Starten op je werklaptop
 
@@ -87,7 +87,7 @@ Unieke sleutel: organisatie + dataset + rapportsoort + periodebegin. Twee proces
 
 ## Lokale opslag en geheimen
 
-PostgreSQL- en Mailpit-volumes blijven op je apparaat. Auth-secret en eenmalige installatiecode staan buiten de repo in `%USERPROFILE%\.cop` (of `COP_DATA_DIR`). Gebruik je eigen Windows-gebruiker en beperk de maprechten; Unix gebruikt 0700/0600. Maak geen cloud-sync van deze map zonder bewuste keuze. Geen browser-localStorage met auth-/SMTP-geheimen. Er zijn in v1 **geen SMTP-wachtwoorden** omdat er alleen lokale opvang is. API en Dockerpoorten zijn loopback; dit ontwerp is niet bedoeld om op je netwerk/internet te publiceren.
+PostgreSQL- en Mailpit-volumes blijven op je apparaat. Auth-secret en eenmalige installatiecode staan buiten de repo in `%USERPROFILE%\.cop` (of `COP_DATA_DIR`). Gebruik je eigen Windows-gebruiker en beperk de maprechten; Unix gebruikt 0700/0600. Maak geen cloud-sync van deze map zonder bewuste keuze. Geen browser-localStorage met auth-/SMTP-geheimen. Microsoft 365 gebruikt een lokaal beschermd OAuth-clientsecret; er wordt geen mailboxwachtwoord opgeslagen. API en Dockerpoorten zijn loopback; dit ontwerp is niet bedoeld om op je netwerk/internet te publiceren.
 
 Backup: stop COP, maak een PostgreSQL `pg_dump` en bewaar ook je `.cop`-map veilig. Het Docker-volume alleen is geen backup. Mailpit bevat opgeslagen testmails met rapportcijfers; maak ook daarvan een backup als je ze wilt bewaren. Geheimen en originele ledenbestanden niet committen. De database bewaart importoriginelen incl. eventuele persoonsgegevens; voeg een bewaartermijn/verwijderprocedure toe voordat meer gebruikers hiermee werken.
 
@@ -95,7 +95,7 @@ Backup: stop COP, maak een PostgreSQL `pg_dump` en bewaar ook je `.cop`-map veil
 
 Zie `sources.md` voor de exacte ontbrekende bronnen. Volgorde: bevestigde API-documentatie en rechten, anders automatisch aangeleverde rapporten, anders handmatige exports. Ontvangstadapters krijgen hetzelfde canonical model en slaan originelen/importmomenten op.
 
-Voor echte uitgaande mails: SMTP-host/poort, TLS, afzender-/send-as-rechten, toegestane ontvangers en een lokaal beschermde serverconfiguratie (Windows Credential Manager of een serversecretfile met ACL). Geen browservelden voor wachtwoorden. Vervang pas na test/review de vaste `LocalTestMailer`, voeg expliciete real-delivery configuratie en herstelcontrole toe. Een apart altijd draaiend apparaat/service is nodig voor betrouwbare ochtendmails als je laptop ’s nachts uitstaat. Geen OpenAI nodig.
+Voor echte uitgaande mails: volg [de Microsoft 365-handleiding](MICROSOFT365.md). Vereist zijn mailboxrechten, lokale OAuth-configuratie en toegestane ontvangers. Er is geen automatische retry; SMTP-acceptatie is geen bevestigde inboxaflevering. Een apart altijd draaiend apparaat/service is nodig voor betrouwbare ochtendmails als je laptop ’s nachts uitstaat. Geen OpenAI nodig.
 
 ## Architectuur en verificatie
 

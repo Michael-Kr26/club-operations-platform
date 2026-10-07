@@ -124,6 +124,24 @@ export class ReportsController {
       date,
     );
   }
+  @Get('mail-status') async mailStatus(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+  ) {
+    return this.reports.mailStatus(await this.access(req, org, true));
+  }
+  @Post('send') async send(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Body() body: { dataset: Dataset; kind: 'daily' | 'monthly'; date: string },
+  ) {
+    return this.reports.send(
+      await this.access(req, org, true),
+      body.dataset,
+      body.kind,
+      body.date,
+    );
+  }
   @Post('capture') async capture(
     @Req() req: FastifyRequest,
     @Param('organizationId') org: string,

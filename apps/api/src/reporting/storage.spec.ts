@@ -47,6 +47,14 @@ describe('PostgreSQL-protocol opslag en servertoegang (PGlite)', () => {
       'utf8',
     );
     await db.exec(migration);
+    const smtpMigration = await readFile(
+      new URL(
+        '../../../../packages/db/migrations/0001_microsoft_mail.sql',
+        import.meta.url,
+      ),
+      'utf8',
+    );
+    await db.exec(smtpMigration);
     server = new PGLiteSocketServer({
       db,
       port: 0,
@@ -218,6 +226,97 @@ describe('PostgreSQL-protocol opslag en servertoegang (PGlite)', () => {
     );
     expect(run?.status).toBe('captured');
     expect(run?.preview?.text).toContain('onbekend');
+  });
+  it('registreert SMTP-acceptatie en voorkomt een tweede echte verzending', async () => {
+    const report = calculateReport(
+      sportSociety,
+      [],
+      'real',
+      'daily',
+      '2026-09-17',
+      defaultSettings,
+    );
+    let sent = 0;
+    const mailer = {
+      delivery: 'microsoft365' as const,
+      capture: async () => {
+        sent++;
+      },
+    };
+    const result = await deliver(
+      store,
+      mailer,
+      'sport-society',
+      report,
+      defaultSettings,
+      'admin',
+    );
+    expect(result.status).toBe('sent');
+    expect(
+      await deliver(
+        store,
+        mailer,
+        'sport-society',
+        report,
+        defaultSettings,
+        'admin',
+      ),
+    ).toEqual({ duplicate: true });
+    expect(sent).toBe(1);
+    const run = (await store.runs('sport-society', 'real')).find(
+      (r) => r.reportDate === '2026-09-17',
+    );
+    expect(run?.status).toBe('sent');
+    expect(run?.preview?.delivery).toBe('microsoft365');
+    expect(run?.preview?.text).not.toContain('Alleen lokale testmailopvang');
+  });
+  it('verzendt demo niet echt en vereist tenantrechten op de verzendroute', async () => {
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/local-auth/sign-in/email',
+      headers: { origin: 'http://localhost:5173' },
+      payload: {
+        email: 'admin@example.invalid',
+        password: 'A-long-test-only-password-42',
+      },
+    });
+    expect(login.statusCode).toBe(200);
+    const raw = login.headers['set-cookie'];
+    const testCookie = (Array.isArray(raw) ? raw : [raw])
+      .map((c) => String(c).split(';')[0])
+      .join('; ');
+    const path = '/api/v1/organizations/sport-society/reports/send';
+    const body = { dataset: 'demo', kind: 'daily', date: '2026-09-17' };
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: path,
+          headers: { origin: 'http://localhost:5173' },
+          payload: body,
+        })
+      ).statusCode,
+    ).toBe(401);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: path,
+          headers: { origin: 'http://localhost:5173', cookie: testCookie },
+          payload: body,
+        })
+      ).statusCode,
+    ).toBe(400);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/api/v1/organizations/other/reports/send',
+          headers: { origin: 'http://localhost:5173', cookie: testCookie },
+          payload: body,
+        })
+      ).statusCode,
+    ).toBe(403);
   });
   it('herhaalt SMTP-onzekerheid niet en markeert achtergebleven claims', async () => {
     const report = calculateReport(
