@@ -31,3 +31,5 @@ Thumbs.db
 *.sqlite3
 .tmp/
 tmp/
+.cop/
+*.pgdump

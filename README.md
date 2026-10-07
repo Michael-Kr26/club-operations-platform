@@ -4,7 +4,7 @@ COP is een multi-tenant operationeel platform voor fitnessclubs. Sport Society w
 
 ## Status
 
-De technische bootstrap bevat een werkende webapp, API-healthcheck, gedeelde contractpackage en database-infrastructuur. Er zijn bewust nog geen functionele COP-modules of productiedata.
+COP bevat de bestaande paginaopzet en een eerste lokale managementrapportagemodule: gecontroleerde CSV/XLSX-imports, dag-/maandcijfers, churn, mailvoorbeelden en automatische lokale testmailopvang. Live leverancierskoppelingen en echte e-mailverzending zijn nog niet ingeschakeld. Zie [de Nederlandse handleiding](docs/reporting/README.md).
 
 ## Beoogde stack
 

@@ -1,0 +1,136 @@
+.cop-reports {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+.cop-reports .page-heading {
+  margin-bottom: 0;
+}
+.report-panel {
+  padding: 24px;
+  min-width: 0;
+}
+.report-panel h2 {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+.report-panel p {
+  line-height: 1.6;
+}
+.report-notice {
+  padding: 16px 20px;
+  border: 1px solid #c9d9f7;
+  border-radius: 12px;
+  background: #eef4ff;
+  color: #233e66;
+  margin: 0;
+  line-height: 1.6;
+}
+.cop-reports label {
+  display: grid;
+  gap: 8px;
+  color: #324969;
+  font-size: 14px;
+}
+.cop-reports input,
+.cop-reports select {
+  padding: 10px 12px;
+  border: 1px solid #d0d9e7;
+  border-radius: 8px;
+  background: white;
+  color: #182b46;
+  font: inherit;
+  max-width: 100%;
+  min-width: 0;
+}
+.cop-reports form {
+  display: grid;
+  gap: 16px;
+}
+.cop-reports .report-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+.cop-reports .report-check input {
+  margin-top: 4px;
+}
+.report-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+.report-panel fieldset {
+  border: 1px solid #d5ddea;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.cop-reports .data-table {
+  min-width: 800px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.cop-reports .data-table td,
+.cop-reports .data-table th {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e3e9f2;
+  vertical-align: top;
+}
+.cop-reports .data-table thead {
+  background: #f3f6fb;
+}
+.cop-reports .data-table th {
+  font-weight: 600;
+}
+.report-unknown {
+  color: #7b6c53;
+  font-style: italic;
+}
+.report-mail {
+  width: 100%;
+  height: 500px;
+  border: 1px solid #d5ddea;
+  border-radius: 8px;
+  background: white;
+}
+.cop-reports pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f4f6fa;
+  padding: 16px;
+  font-size: 13px;
+}
+.cop-reports li {
+  margin: 6px 0;
+  line-height: 1.5;
+}
+.cop-reports button {
+  justify-self: start;
+  cursor: pointer;
+}
+.cop-reports button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.cop-reports details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.cop-reports .page-toolbar {
+  flex-wrap: wrap;
+  align-items: end;
+}
+@media (max-width: 700px) {
+  .report-panel {
+    padding: 16px;
+  }
+  .cop-reports .page-toolbar {
+    display: grid;
+  }
+}

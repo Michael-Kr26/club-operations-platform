@@ -1,15 +1,8 @@
 export type LocationSlug =
-  | 'barneveld'
-  | 'achterveld'
-  | 'wekerom'
-  | 'harskamp'
-  | 'voorthuizen';
+  'barneveld' | 'achterveld' | 'wekerom' | 'harskamp' | 'voorthuizen';
 
 export type AbsenceType =
-  | 'sick'
-  | 'paid_leave'
-  | 'parental_leave'
-  | 'time_off_in_lieu';
+  'sick' | 'paid_leave' | 'parental_leave' | 'time_off_in_lieu';
 
 export type Shift = {
   id: string;
