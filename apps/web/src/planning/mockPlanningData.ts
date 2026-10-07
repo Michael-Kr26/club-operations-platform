@@ -11,12 +11,11 @@ export const mockShifts: Shift[] = [
   },
 
   {
-  id: 'shift-002',
-  employeeNumber: 'TEST-EMPLOYEE-002',
-  locationSlug: 'barneveld',
-  date: '2026-10-05',
-  startTime: '07:00',
-  endTime: '13:00',
+    id: 'shift-002',
+    employeeNumber: 'TEST-EMPLOYEE-002',
+    locationSlug: 'barneveld',
+    date: '2026-10-05',
+    startTime: '07:00',
+    endTime: '13:00',
   },
 ];
-

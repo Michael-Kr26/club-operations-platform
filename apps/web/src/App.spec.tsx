@@ -70,7 +70,7 @@ describe('module navigation', () => {
     ['/planning', 'Planning'],
     ['/taken', 'Taken'],
     ['/locaties', 'Locaties'],
-    ['/rapportages', 'Rapportages'],
+    ['/rapportages', 'Ochtendrapport & churn'],
     ['/instellingen', 'Instellingen'],
     ['/locaties/achterveld', 'Achterveld'],
     ['/locaties/onbekend', 'Pagina niet gevonden'],

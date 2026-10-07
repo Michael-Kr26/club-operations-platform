@@ -1,7 +1,12 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
-export function createDatabase(connectionString = process.env.DATABASE_URL) {
+export function createDatabase(
+  connectionString = process.env.DATABASE_URL ??
+    (process.env.NODE_ENV !== 'production'
+      ? 'postgresql://cop:cop@localhost:5432/cop'
+      : undefined),
+) {
   if (!connectionString) {
     throw new Error('DATABASE_URL is required');
   }

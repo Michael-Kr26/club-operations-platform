@@ -12,10 +12,10 @@ import {
   TasksPage,
   LocationsPage,
   LocationDetailPage,
-  ReportsPage,
   SettingsPage,
   NotFoundPage,
 } from './pages/ModulePages';
+import { ReportsPage } from './reports/ReportsPage';
 import { useQuery } from '@tanstack/react-query';
 import type { HealthResponse } from '@cop/contracts';
 import type { ReactNode } from 'react';
