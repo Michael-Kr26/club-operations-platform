@@ -5,7 +5,12 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { once } from 'node:events';
 import { startLocalDatabase } from './local-database.mjs';
+import { startupDiagnostic } from './startup-diagnostics.mjs';
 
+// pnpm --filter starts this script in apps/api. Use the same working directory
+// as a direct start from the repository root, on Windows as well as Unix.
+const rootDirectory = fileURLToPath(new URL('../../../', import.meta.url));
+process.chdir(rootDirectory);
 const directory = process.env.COP_DATA_DIR ?? join(homedir(), '.cop');
 const apiDirectory = fileURLToPath(new URL('../', import.meta.url));
 const webDirectory = fileURLToPath(new URL('../../web/', import.meta.url));
@@ -21,6 +26,7 @@ const vite = join(
 const children = [];
 let database,
   stopping = false;
+let phase = 'database starten en migreren';
 async function stop(code = 0) {
   if (stopping) return;
   stopping = true;
@@ -75,6 +81,8 @@ try {
     'Lokale database starten en migraties uitvoeren (zonder Docker)…',
   );
   database = await startLocalDatabase(directory);
+  console.log('Lokale database en migraties klaar.');
+  phase = 'API starten';
   const env = {
     ...process.env,
     DATABASE_URL: database.connectionString,
@@ -91,6 +99,7 @@ try {
     async (response) => (await response.json()).ready === true,
   );
   if (!stopping) {
+    phase = 'website starten';
     start(
       [vite, '--host', '127.0.0.1', '--port', '5173', '--strictPort'],
       webDirectory,
@@ -109,6 +118,10 @@ try {
     );
   }
 } catch (error) {
+  console.error(startupDiagnostic(error, phase));
+  console.error(`Runtime: Node ${process.version} (${process.arch}).`);
+  console.error(`Werkmap: ${process.cwd()}`);
+  console.error(`Lokale gegevensmap: ${directory}`);
   if (error.message?.includes('vergrendeld')) console.error(error.message);
   if (error.code === 'EADDRINUSE')
     console.error(
