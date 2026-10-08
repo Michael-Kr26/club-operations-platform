@@ -27,6 +27,10 @@ async function api<T>(
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (!response.headers.get('content-type')?.includes('application/json'))
+    throw new Error(
+      'Backend niet bereikbaar. Start COP met pnpm.cmd dev:local.',
+    );
   const result = await response.json();
   if (!response.ok)
     throw new Error(
@@ -104,6 +108,7 @@ export function ReportsPage() {
     queryFn: () =>
       api<{
         initializationError?: string | null;
+        localTestMailAvailable?: boolean;
         ready: boolean;
         setupRequired: boolean;
         setupTokenFile: string | null;
@@ -204,11 +209,15 @@ export function ReportsPage() {
       <p className="report-notice">
         {mailStatus.data?.ready
           ? `Echte verzending is ingesteld via ${mailStatus.data.sender}. Live bronkoppelingen zijn nog niet beschikbaar.`
-          : 'Echte mail is nog niet ingesteld. Testmails blijven in de lokale opvang.'}{' '}
-        <a href="http://localhost:8025" target="_blank" rel="noreferrer">
-          Lokale mailopvang
-        </a>
-        .{mailStatus.data?.error}
+          : status.data?.localTestMailAvailable === false
+            ? 'Lokale database zonder Docker. Mailvoorbeelden werken; lokale mailopvang is niet gestart.'
+            : 'Echte mail is nog niet ingesteld. Testmails blijven in de lokale opvang.'}{' '}
+        {status.data?.localTestMailAvailable !== false && (
+          <a href="http://localhost:8025" target="_blank" rel="noreferrer">
+            Lokale mailopvang
+          </a>
+        )}
+        {mailStatus.data?.error}
       </p>
       {message && (
         <p role="status" className="report-notice">
@@ -219,9 +228,9 @@ export function ReportsPage() {
         <section className="panel report-panel">
           <h2>Lokale verwerking nog niet beschikbaar</h2>
           <p>
-            Start PostgreSQL, voer{' '}
-            <code>pnpm.cmd --filter @cop/db db:migrate</code> uit en herstart
-            COP. {status.data?.initializationError ?? status.error?.message}
+            Start de website en lokale database samen met{' '}
+            <code>pnpm.cmd dev:local</code>.{' '}
+            {status.data?.initializationError ?? status.error?.message}
           </p>
           <button
             onClick={() => void client.invalidateQueries()}
@@ -576,7 +585,7 @@ export function ReportsPage() {
                 Echt versturen naar ingestelde ontvangers
               </button>
             )}
-            {manage && (
+            {manage && status.data?.localTestMailAvailable !== false && (
               <button
                 className="button button--primary"
                 disabled={busy || !preview.data}

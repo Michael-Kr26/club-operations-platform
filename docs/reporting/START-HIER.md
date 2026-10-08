@@ -1,6 +1,10 @@
 # COP rapportages: snel starten
 
-## Ophalen en starten (PowerShell)
+## Zonder Docker (aanbevolen bij WSL-problemen)
+
+Zie [de korte startinstructie](ZONDER-DOCKER.md). Met `pnpm.cmd dev:local` starten website, backend, database en migraties samen.
+
+## Met Docker: ophalen en starten (PowerShell)
 
 Stop een eventueel draaiende COP-terminal met Ctrl+C. Docker Desktop moet draaien.
 

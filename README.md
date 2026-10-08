@@ -4,7 +4,7 @@ COP is een multi-tenant operationeel platform voor fitnessclubs. Sport Society w
 
 ## Status
 
-COP bevat de bestaande paginaopzet en een eerste lokale managementrapportagemodule: gecontroleerde CSV/XLSX-imports, dag-/maandcijfers, churn, mailvoorbeelden en automatische lokale testmailopvang. Live leverancierskoppelingen zijn nog niet beschikbaar. Echte Microsoft 365-verzending kan via [lokale OAuth-configuratie](docs/reporting/MICROSOFT365.md) worden ingeschakeld. Zie [de Nederlandse handleiding](docs/reporting/README.md).
+COP bevat de bestaande paginaopzet en een eerste lokale managementrapportagemodule: gecontroleerde CSV/XLSX-imports, dag-/maandcijfers, churn, mailvoorbeelden en automatische lokale testmailopvang. Live leverancierskoppelingen zijn nog niet beschikbaar. Echte Microsoft 365-verzending kan via [lokale OAuth-configuratie](docs/reporting/MICROSOFT365.md) worden ingeschakeld. Zie [de Nederlandse handleiding](docs/reporting/README.md). Bij Docker/WSL-problemen: [zonder Docker starten](docs/reporting/ZONDER-DOCKER.md) met `pnpm dev:local`.
 
 ## Beoogde stack
 

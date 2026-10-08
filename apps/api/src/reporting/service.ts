@@ -12,7 +12,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { Pool } from 'pg';
+import { Pool, type PoolClient } from 'pg';
 import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import type {
   Dataset,
@@ -83,6 +83,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
   private timer: ReturnType<typeof setInterval> | undefined;
   private ticking = false;
   private setupToken = '';
+  private setupInProgress = false;
   private lastTick: string | null = null;
   private schedulerError: string | null = null;
   async onModuleInit() {
@@ -163,6 +164,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
           ? join(this.dataDirectory, 'setup-token')
           : null,
       initializationError: this.initializationError,
+      localTestMailAvailable: process.env.COP_STORAGE_MODE !== 'pglite-local',
       lastTick: this.lastTick,
       schedulerError: this.schedulerError,
     };
@@ -195,10 +197,17 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException(
         'Gebruik een geldig e-mailadres, naam en wachtwoord van 12–128 tekens.',
       );
-    const client = await this.pool.connect();
+    if (this.setupInProgress)
+      throw new ForbiddenException('Installatie wordt al uitgevoerd.');
+    this.setupInProgress = true;
+    let client: PoolClient | undefined;
+    let locked = false;
     try {
-      await client.query('BEGIN');
-      await client.query('SELECT pg_advisory_xact_lock(73481026)');
+      client = await this.pool.connect();
+      // Session lock protects multiple API processes without holding a transaction
+      // while Better Auth uses another pool connection (PGlite serializes connections).
+      await client.query('SELECT pg_advisory_lock(73481026)');
+      locked = true;
       const check = await client.query(
         'SELECT count(*) AS n FROM report_access',
       );
@@ -215,17 +224,18 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
           JSON.stringify(['reports.read', 'reports.manage']),
         ],
       );
-      await client.query('COMMIT');
       this.setupToken = '';
       await unlink(join(this.dataDirectory, 'setup-token')).catch(
         () => undefined,
       );
       return { ok: true };
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
     } finally {
-      client.release();
+      if (locked && client)
+        await client
+          .query('SELECT pg_advisory_unlock(73481026)')
+          .catch(() => undefined);
+      client?.release();
+      this.setupInProgress = false;
     }
   }
   async principal(headers: Headers, org: string, permission: Permission) {
