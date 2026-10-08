@@ -41,3 +41,7 @@ Open **http://localhost:5173/rapportages**. Laat de laatste terminal open.
 **Laptop of COP uit:** geen automatische run. Gemiste laatste dag/maand wordt geregistreerd; geen stille inhaalmail na de startmarge van vijf minuten. Een lokale SMTP-fout blijft ‘onzeker’, zonder herverzending. Eén periode wordt slechts eenmaal geclaimd.
 
 Stoppen: Ctrl+C. Gegevens blijven in lokale Docker-volumes en je `.cop`-map. Verwijder die niet. Uitgebreide definities, backup, beperkingen en vervolgstappen: [README](README.md) en [bronnen](sources.md).
+
+## Healthplanner-ochtendmail
+
+Zie [OUTLOOK-HEALTHPLANNER.md](OUTLOOK-HEALTHPLANNER.md) voor EML-import, bronmailbox en het ritme 08:35 ophalen / 08:45 verzenden.

@@ -55,6 +55,9 @@ const labels: Record<keyof Metrics, string> = {
   received: 'Ontvangen betalingen',
   outstanding: 'Openstaand',
   failedDebits: 'Mislukte incasso’s',
+  soldMemberships: 'Verkochte lidmaatschappen (HP)',
+  requestedCancellations: 'Opzeggingen gemeld (HP)',
+  withoutFutureAppointment: 'Leden zonder toekomstige afspraak (HP)',
   leads: 'Leads',
   converted: 'Leads naar lid',
   conversion: 'Conversie',
@@ -128,6 +131,25 @@ export function ReportsPage() {
   const manage =
     access.data?.permissions.includes('reports.manage') &&
     access.data.locations === null;
+  const sourceStatus = useQuery({
+    queryKey: ['reports-source-status', org],
+    queryFn: () =>
+      api<{
+        configured: boolean;
+        error: string | null;
+        lastAttempt: string | null;
+        lastResult: {
+          ok: boolean;
+          currentReportAvailable?: boolean;
+          imported?: number;
+          duplicates?: number;
+          error?: string;
+        } | null;
+      }>(`${base}/source-status`),
+    enabled: !!manage,
+    retry: false,
+    refetchInterval: 30000,
+  });
   const mailStatus = useQuery({
     queryKey: ['reports-mail-status', org],
     queryFn: () =>
@@ -172,7 +194,17 @@ export function ReportsPage() {
     retry: false,
     refetchInterval: 30000,
   });
-  const current = editing ?? settings.data;
+  const current =
+    editing ??
+    (settings.data
+      ? {
+          ...settings.data,
+          rulesVersion: REPORT_RULES_VERSION,
+          rulesApproved:
+            settings.data.rulesApproved &&
+            settings.data.rulesVersion === REPORT_RULES_VERSION,
+        }
+      : undefined);
   async function action(work: () => Promise<unknown>, success: string) {
     setBusy(true);
     setMessage('');
@@ -487,6 +519,23 @@ export function ReportsPage() {
               </section>
               <section className="panel report-panel">
                 <h2>Bronnen & laatste succesvolle import</h2>
+                {manage && (
+                  <p>
+                    Outlook Healthplanner:{' '}
+                    {sourceStatus.data?.configured
+                      ? 'ingesteld; ophalen om 08:35, alleen bij ontbreken/fouten opnieuw vóór 08:45'
+                      : 'nog niet gekoppeld'}
+                    . Laatste poging:{' '}
+                    {timestamp(sourceStatus.data?.lastAttempt ?? null)}.{' '}
+                    {sourceStatus.data?.lastResult?.ok
+                      ? `${sourceStatus.data.lastResult.imported ?? 0} geïmporteerd, ${sourceStatus.data.lastResult.duplicates ?? 0} dubbel herkend. ${sourceStatus.data.lastResult.currentReportAvailable ? 'Actuele ochtendrapportage aanwezig.' : 'Actuele ochtendrapportage ontbreekt; alleen oudere mails beschikbaar.'}`
+                      : sourceStatus.data?.lastResult?.error}{' '}
+                    {sourceStatus.data?.error}
+                  </p>
+                )}
+                {sourceStatus.error && (
+                  <p role="alert">{sourceStatus.error.message}</p>
+                )}
                 <div className="table-scroll">
                   <table className="data-table">
                     <thead>
@@ -562,7 +611,8 @@ export function ReportsPage() {
                   !preview.data ||
                   !report.data ||
                   report.data.provisional ||
-                  !!report.data.warnings.length
+                  (!!report.data.warnings.length &&
+                    !(kind === 'daily' && settings.data?.allowPartialDaily))
                 }
                 onClick={() =>
                   void action(async () => {
@@ -681,8 +731,21 @@ export function ReportsPage() {
                         checked={current.enabled}
                         onChange={(e) => patch({ enabled: e.target.checked })}
                       />
-                      Automatische lokale testopvang inschakelen (werkelijke
-                      dataset).
+                      Automatische verzending inschakelen (Microsoft 365 indien
+                      ingesteld; anders lokale testopvang).
+                    </label>
+                    <label className="report-check">
+                      <input
+                        type="checkbox"
+                        checked={current.allowPartialDaily ?? false}
+                        onChange={(e) =>
+                          patch({ allowPartialDaily: e.target.checked })
+                        }
+                      />
+                      Ochtendmail toestaan met complete actuele
+                      Healthplanner-cijfers en ontbrekende Dewi-bronnen als
+                      onbekend. Maandelijkse churn blijft geblokkeerd zonder
+                      volledige bronnen.
                     </label>
                     <button className="button" disabled={busy}>
                       Opslaan
@@ -700,9 +763,12 @@ export function ReportsPage() {
                 )}
               </section>
               <section className="panel report-panel">
-                <h2>CSV / Excel import</h2>
+                <h2>CSV / Excel / Healthplanner-mail import</h2>
                 <p>
-                  Sjablonen staan in <code>docs/reporting/templates</code>. Ruwe
+                  Een Healthplanner .eml-mail bepaalt zelf de dag (gisteren) en
+                  alle clubs; kies Healthplanner als bron. Maandkolommen worden
+                  bewaard, maar hun periode is nog niet bevestigd. Sjablonen
+                  staan in <code>docs/reporting/templates</code>. Ruwe
                   Dewi/HP-ledenlijsten missen historie en worden met uitleg
                   afgewezen. Een complete import vervangt eerdere imports voor
                   zijn scope en periode.
@@ -783,7 +849,7 @@ export function ReportsPage() {
                       Bestand
                       <input
                         type="file"
-                        accept=".csv,.xlsx"
+                        accept=".csv,.xlsx,.eml"
                         onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                         required
                       />

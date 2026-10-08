@@ -31,6 +31,14 @@ export interface FinanceRow {
   amountCents: number;
 }
 export interface HealthplannerRow {
+  soldMemberships?: number | null;
+  requestedCancellations?: number | null;
+  withoutFutureAppointment?: number | null;
+  managementMail?: {
+    reportDate: string;
+    monthPeriodUnconfirmed: boolean;
+    values: Record<string, { yesterday: string; month: string }>;
+  };
   locationId: string;
   date: string;
   leads: number | null;
@@ -60,6 +68,7 @@ export interface ImportSummary extends Omit<StoredImport, 'rows'> {
   rowCount: number;
 }
 export interface ReportSettings {
+  allowPartialDaily?: boolean;
   recipients: string[];
   time: string;
   timezone: 'Europe/Amsterdam';
@@ -68,6 +77,9 @@ export interface ReportSettings {
   rulesVersion: string;
 }
 export interface Metrics {
+  soldMemberships: number | null;
+  requestedCancellations: number | null;
+  withoutFutureAppointment: number | null;
   active: number | null;
   paused: number | null;
   frozen: number | null;
@@ -129,8 +141,12 @@ export interface SendRun {
   reason: string | null;
   preview: MailPreview | null;
 }
-export const REPORT_RULES_VERSION = 'proposal-1';
+export const REPORT_RULES_VERSION = 'proposal-2';
 export const REPORT_RULES = [
+  'Healthplanner-mail: Gisteren is de kalenderdag vóór de maildatum in Europe/Amsterdam; de datum en weekdag in de HTML moeten overeenkomen. De maandkolom blijft een ongevalideerde bronwaarde totdat Healthplanner de exacte periode bevestigt.',
+  'Verkochte lidmaatschappen (HP) zijn geen bewezen leadcohortconversies. Gemelde opzeggingen (HP) hebben geen effectieve einddatum en tellen niet als Dewi-uitstroom of churn.',
+  'Een gedeeltelijke ochtendmail vereist expliciete toestemming, volledige actuele HP-gegevens voor alle clubs en duidelijk onbekende ontbrekende Dewi-gegevens. Dit geeft maandelijkse churn niet vrij.',
+
   'Dewi actief = unieke leden met een geldig abonnement; gepauzeerd en bevroren worden apart getoond en tellen niet mee als actief. Healthplanner bezoekend actief is een andere maatstaf.',
   'startDate telt inclusief. endDate is de eerste dag zonder abonnement (exclusief); controleer de betekenis van een Dewi einddatum vóór mapping.',
   'Uitstroom gebruikt de effectieve einddatum, niet de aanvraagdatum. Geen uitstroom bij een ander doorlopend abonnement in dezelfde club.',

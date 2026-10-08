@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { mkdtemp, rm, readFile, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Pool } from 'pg';
 import { startLocalDatabase } from '../../scripts/local-database.mjs';
-import { ReportStore } from './store.js';
+import { ReportStore, sportSociety } from './store.js';
+import { OutlookSource } from './outlook-source.js';
 import { ReportingService } from './service.js';
 
 const directories: string[] = [];
@@ -13,6 +14,78 @@ afterEach(async () => {
     await rm(dir, { recursive: true, force: true });
 });
 describe('Dockerloze lokale database', () => {
+  it('bewaart een ophaalpoging en slaat retries, herstart en andere tenant over zodra de actuele import er is', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'cop-outlook-'));
+    directories.push(dir);
+    const db = await startLocalDatabase(dir, { port: 0 });
+    const pool = new Pool({ connectionString: db.connectionString });
+    const now = new Date('2026-10-08T06:35:00Z');
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ access_token: 'test' }))
+      .mockResolvedValueOnce(Response.json({ value: [] }));
+    vi.stubGlobal('fetch', fetch);
+    try {
+      const store = new ReportStore(pool);
+      await store.seed();
+      await mkdir(join(dir, 'sources'));
+      await writeFile(
+        join(dir, 'sources', 'sport-society.json'),
+        JSON.stringify({
+          organizationId: 'sport-society',
+          enabled: true,
+          tenantId: '11111111-1111-1111-1111-111111111111',
+          clientId: '22222222-2222-2222-2222-222222222222',
+          clientSecret: 'dummy-secret',
+          mailbox: 'test@example.com',
+          folderId: 'inbox',
+        }),
+      );
+      await store.saveImport(
+        'sport-society',
+        {
+          source: 'healthplanner',
+          dataset: 'real',
+          from: '2026-10-07',
+          through: '2026-10-07',
+          locations: sportSociety.locations.map((l) => l.id),
+          complete: true,
+        },
+        'healthplanner.eml',
+        Buffer.from('fixture'),
+        'fixture',
+        [],
+        null,
+        'tester',
+      );
+      const source = new OutlookSource(dir, pool);
+      await source.poll(sportSociety, now, async () => false);
+      expect(
+        (await source.status('sport-society')).lastResult
+          .currentReportAvailable,
+      ).toBe(true);
+      await source.poll(sportSociety, now, async () => false);
+      await new OutlookSource(dir, pool).poll(
+        sportSociety,
+        new Date('2026-10-08T06:38:00Z'),
+        async () => false,
+      );
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect((await source.status('other-tenant')).lastAttempt).toBeNull();
+      expect(
+        (
+          await pool.query(
+            "SELECT count(*)::int AS count FROM report_audit WHERE action='healthplanner.poll'",
+          )
+        ).rows[0].count,
+      ).toBe(1);
+    } finally {
+      vi.unstubAllGlobals();
+      await pool.end();
+      await db.close();
+    }
+  }, 10000);
+
   it('past migraties toe, bewaart importoriginelen en instellingen na herstart en weigert een tweede proces', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'cop-persistent-'));
     directories.push(dir);

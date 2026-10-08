@@ -211,6 +211,9 @@ export function emptyMetrics(): Metrics {
     failedDebits: null,
     leads: null,
     converted: null,
+    soldMemberships: null,
+    requestedCancellations: null,
+    withoutFutureAppointment: null,
     conversion: null,
     appointments: null,
     visitingActive: null,
@@ -250,9 +253,36 @@ export function calculateReport(
             b.importedAt.localeCompare(a.importedAt) ||
             b.id.localeCompare(a.id),
         );
-      const covered = candidates.find(
+      let covered = candidates.find(
         (i) => i.complete && i.from <= from && i.through >= through,
       );
+      if (!covered && source === 'healthplanner') {
+        const daily: HealthplannerRow[] = [];
+        let newest: StoredImport | undefined;
+        for (let day = from; day <= through; day = shiftDate(day, 1)) {
+          const item = candidates.find(
+            (i) =>
+              i.complete &&
+              i.from <= day &&
+              i.through >= day &&
+              i.rows.some(
+                (r) =>
+                  'date' in r && r.date === day && r.locationId === location.id,
+              ),
+          );
+          if (!item) break;
+          daily.push(
+            ...(item.rows as HealthplannerRow[]).filter(
+              (r) => r.date === day && r.locationId === location.id,
+            ),
+          );
+          if (!newest || item.importedAt > newest.importedAt) newest = item;
+        }
+        const days =
+          Math.round((Date.parse(through) - Date.parse(from)) / 86400_000) + 1;
+        if (newest && daily.length === days)
+          covered = { ...newest, from, through, rows: daily };
+      }
       const latest = covered ?? candidates[0];
       const rejected = imports
         .filter(
@@ -341,14 +371,21 @@ export function calculateReport(
         (r) =>
           r.locationId === location.id && r.date >= from && r.date <= through,
       );
-      for (const key of ['leads', 'converted', 'appointments'] as const)
+      for (const key of [
+        'leads',
+        'converted',
+        'appointments',
+        'soldMemberships',
+        'requestedCancellations',
+      ] as const)
         metrics[key] =
-          rows.length && rows.every((r) => r[key] !== null)
+          rows.length && rows.every((r) => r[key] != null)
             ? rows.reduce((s, r) => s + r[key]!, 0)
             : null;
       const last = rows.find((r) => r.date === through);
       metrics.visitingActive = last?.visitingActive ?? null;
       metrics.sleeping = last?.sleeping ?? null;
+      metrics.withoutFutureAppointment = last?.withoutFutureAppointment ?? null;
       metrics.conversion =
         metrics.leads && metrics.converted !== null
           ? metrics.converted / metrics.leads
@@ -395,6 +432,7 @@ export function calculateReport(
   // Healthplanner exports do not prove cross-club identity; organization-wide visiting-member counts stay unknown.
   total.visitingActive = null;
   total.sleeping = null;
+  total.withoutFutureAppointment = null;
   total.churn =
     total.opening && total.exits !== null ? total.exits / total.opening : null;
   total.conversion =

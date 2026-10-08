@@ -31,6 +31,7 @@ import {
   reportPeriod,
   validateMeta,
 } from './calculation.js';
+import { parseHealthplannerMail } from './healthplanner-mail.js';
 import { CanonicalFileAdapter } from './adapters.js';
 import { LocalTestMailer, previewMail } from './mail.js';
 import {
@@ -38,7 +39,13 @@ import {
   Microsoft365Mailer,
   checkRealRecipients,
 } from './microsoft-mail.js';
-import { deliver, dueRuns, scheduledRun } from './delivery.js';
+import { OutlookSource } from './outlook-source.js';
+import {
+  deliver,
+  dueRuns,
+  scheduledRun,
+  canDeliverReport,
+} from './delivery.js';
 
 export const WEB_ORIGIN = process.env.WEB_URL ?? 'http://localhost:5173';
 export function requirePermission(
@@ -82,6 +89,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
   private initializationError: string | null = null;
   private timer: ReturnType<typeof setInterval> | undefined;
   private ticking = false;
+  private outlook?: OutlookSource;
   private setupToken = '';
   private setupInProgress = false;
   private lastTick: string | null = null;
@@ -127,6 +135,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         }
         this.setupToken = (await readFile(file, 'utf8')).trim();
       }
+      this.outlook = new OutlookSource(this.dataDirectory, this.pool);
       this.ready = true;
       this.pool.on('error', () => {
         this.schedulerError = 'Databaseverbinding onderbroken.';
@@ -311,6 +320,42 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
     if (!body?.meta) throw new BadRequestException('Importmetadata ontbreken.');
     requirePermission(principal, principal.organizationId, 'reports.manage');
     const org = await this.organization(principal.organizationId);
+    const isMail =
+      typeof body.filename === 'string' && /\.eml$/i.test(body.filename);
+    let mailRows: StoredImport['rows'] | undefined;
+    let mailError: string | null = null;
+    if (isMail) {
+      if (
+        body.meta.source !== 'healthplanner' ||
+        typeof body.content !== 'string' ||
+        body.content.length > 7_000_000 ||
+        !/^[A-Za-z0-9+/]*={0,2}$/.test(body.content)
+      )
+        throw new BadRequestException(
+          'Gebruik Healthplanner en een geldige EML van maximaal 5 MB.',
+        );
+      try {
+        const parsed = await parseHealthplannerMail(
+          Buffer.from(body.content, 'base64'),
+          org,
+        );
+        body = {
+          ...body,
+          meta: { ...parsed.meta, dataset: body.meta.dataset },
+        };
+        mailRows = parsed.rows;
+      } catch (error) {
+        mailError = (error as Error).message.slice(0, 600);
+        body = {
+          ...body,
+          meta: {
+            ...body.meta,
+            locations: org.locations.map((l) => l.id),
+            complete: false,
+          },
+        };
+      }
+    }
     try {
       validateMeta(body.meta, org);
     } catch (e) {
@@ -342,9 +387,12 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       .update(JSON.stringify(meta))
       .digest('hex');
     let rows: StoredImport['rows'] = [],
-      error: string | null = null;
+      error: string | null = mailError;
     try {
-      rows = await new CanonicalFileAdapter().parse(bytes, filename, meta);
+      if (mailError) throw new Error(mailError);
+      rows =
+        mailRows ??
+        (await new CanonicalFileAdapter().parse(bytes, filename, meta));
     } catch (e) {
       error = (e as Error).message.slice(0, 600);
     }
@@ -387,6 +435,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       timezone: body.timezone,
       enabled: body.enabled,
       rulesApproved: body.rulesApproved,
+      allowPartialDaily: body.allowPartialDaily === true,
       rulesVersion: REPORT_RULES_VERSION,
     };
     if (
@@ -513,11 +562,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       );
     const report = await this.report(principal, dataset, kind, date);
     const settings = await this.store.settings(principal.organizationId);
-    if (
-      report.provisional ||
-      report.warnings.length ||
-      report.sources.some((s) => s.status !== 'ready')
-    )
+    if (!canDeliverReport(report, settings))
       throw new BadRequestException(
         'Echte verzending vereist goedgekeurde bedrijfsregels en complete geldige bronnen.',
       );
@@ -576,16 +621,51 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         : 'local-test-only',
     );
   }
+  async sourceStatus(principal: Principal) {
+    requirePermission(principal, principal.organizationId, 'reports.manage');
+    return this.outlook!.status(principal.organizationId);
+  }
   async tick(now = new Date()) {
     if (this.ticking || !this.ready) return;
     this.ticking = true;
     try {
       await this.store.recoverClaims();
       const { rows } = await this.pool.query(
-        'SELECT organization_id FROM report_settings',
+        'SELECT id AS organization_id FROM report_organizations',
       );
       for (const r of rows) {
         const org = await this.organization(r.organization_id);
+        await this.outlook!.poll(org, now, async (bytes) => {
+          const day = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Europe/Amsterdam',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          }).format(new Date(now.getTime() - 86400_000));
+          const result = await this.importFile(
+            {
+              userId: 'outlook-source',
+              organizationId: org.id,
+              permissions: ['reports.manage'],
+              locations: null,
+            },
+            {
+              meta: {
+                source: 'healthplanner',
+                dataset: 'real',
+                from: day,
+                through: day,
+                locations: org.locations.map((l) => l.id),
+                complete: true,
+              },
+              filename: 'healthplanner.eml',
+              content: bytes.toString('base64'),
+            },
+          );
+          if (result.status === 'rejected')
+            throw new Error('Import afgewezen.');
+          return result.duplicate;
+        });
         const settings = await this.store.settings(org.id);
         if (!settings.enabled) continue;
         let config: Awaited<ReturnType<typeof loadMicrosoftConfig>> = null;

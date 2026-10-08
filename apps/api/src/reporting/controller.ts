@@ -154,6 +154,12 @@ export class ReportsController {
       body.date,
     );
   }
+  @Get('source-status') async sourceStatus(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+  ) {
+    return this.reports.sourceStatus(await this.access(req, org, true));
+  }
   @Get('settings') async settings(
     @Req() req: FastifyRequest,
     @Param('organizationId') org: string,

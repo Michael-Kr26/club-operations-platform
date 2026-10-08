@@ -47,3 +47,7 @@ Healthplanner beschrijft management/verkoop-/ledenfunctionaliteit: https://healt
 | 10       | Reviews, klachten en open meldingen                          | Toegestane reviewbron en meldingenregistratie                                          |
 
 Deze uitbreiding is een plan, geen reeds werkende synchronisatie.
+
+## Bevestigde dagelijkse managementmail (8 oktober 2026)
+
+De werkelijk ontvangen Healthplanner EML van 7 oktober bevat twee secties in een HTML-tabel voor vijf clubs, telkens gisteren/maand. MIME-import en Graph-bronadapter zijn toegevoegd; zie [OUTLOOK-HEALTHPLANNER.md](OUTLOOK-HEALTHPLANNER.md). De bronmail zelf wordt niet in Git opgenomen. Microsoft 365-toegang is nog niet verstrekt of live bevestigd. Maandkolomperioden, cohortpercentages, bezoekdefinities en effectieve uitstroom blijven te bevestigen.

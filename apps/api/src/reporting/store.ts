@@ -14,7 +14,7 @@ import { REPORT_RULES_VERSION } from '@cop/contracts';
 
 export const defaultSettings: ReportSettings = {
   recipients: [],
-  time: '07:00',
+  time: '08:45',
   timezone: 'Europe/Amsterdam',
   enabled: false,
   rulesApproved: false,

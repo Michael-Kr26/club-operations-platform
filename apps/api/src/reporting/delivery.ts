@@ -64,6 +64,49 @@ export function dueRuns(
     return due.filter((r) => r.kind !== 'monthly');
   return due;
 }
+export function canDeliverReport(
+  report: ManagementReport,
+  settings: ReportSettings,
+) {
+  if (report.provisional || !settings.recipients.length) return false;
+  if (
+    !report.warnings.length &&
+    report.sources.every((s) => s.status === 'ready')
+  )
+    return true;
+  if (
+    report.kind !== 'daily' ||
+    settings.allowPartialDaily !== true ||
+    !report.clubs.length
+  )
+    return false;
+  return (
+    report.clubs.every(
+      (c) =>
+        report.sources.some(
+          (s) =>
+            s.source === 'healthplanner' &&
+            s.locationId === c.id &&
+            s.status === 'ready',
+        ) &&
+        [
+          c.metrics.leads,
+          c.metrics.appointments,
+          c.metrics.visitingActive,
+          c.metrics.sleeping,
+          c.metrics.soldMemberships,
+          c.metrics.requestedCancellations,
+          c.metrics.withoutFutureAppointment,
+        ].every((v) => v != null),
+    ) &&
+    report.sources.every(
+      (s) =>
+        s.source === 'healthplanner' ||
+        s.status === 'missing' ||
+        s.status === 'ready',
+    )
+  );
+}
 export async function scheduledRun(
   store: ReportStore,
   mailer: TestMailer,
@@ -82,12 +125,7 @@ export async function scheduledRun(
       'missed',
       'Geplande tijd gemist (computer/proces uit, slaapstand of klokovergang). Geen automatische inhaalmail; vijf minuten startmarge.',
     );
-  if (
-    report.provisional ||
-    report.warnings.length > 0 ||
-    report.sources.some((s) => s.status !== 'ready') ||
-    !settings.recipients.length
-  )
+  if (!canDeliverReport(report, settings))
     return store.claim(
       org,
       'real',
