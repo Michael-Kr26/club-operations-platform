@@ -3,11 +3,15 @@ import type {
   CombinedPeriod,
   ForecastImport,
   ReportOrganization,
+  WorkbookThresholds,
 } from '@cop/contracts';
+import { addWorkbookInsights, supplementChanges } from './workbook-insights.js';
 
 export function workbookOverview(
   org: ReportOrganization,
   imports: ForecastImport[],
+  thresholds?: WorkbookThresholds,
+  now?: Date,
 ): CombinedWorkbookDashboard {
   // Newest import wins for a whole club/period. Never fill its missing cells from
   // older files; that would silently construct a report that no source contains.
@@ -83,11 +87,14 @@ export function workbookOverview(
     seen.add(key);
     return true;
   });
+  const ordered = [...periods.values()].sort((a, b) =>
+    a.period.localeCompare(b.period),
+  );
+  addWorkbookInsights(ordered, thresholds, now);
   return {
-    periods: [...periods.values()].sort((a, b) =>
-      a.period.localeCompare(b.period),
-    ),
+    periods: ordered,
     supplements,
+    supplementChanges: supplementChanges(supplements, now),
     warnings: [
       'Organisatietotalen zijn een optelsom van clubregistraties, geen unieke leden. Ontbreekt één clubwaarde, dan blijft het totaal onbekend.',
       'Healthplanner bezoekend actief, Dewi status Actief en een forecast-eindstand hebben verschillende definities en blijven afzonderlijk zichtbaar.',

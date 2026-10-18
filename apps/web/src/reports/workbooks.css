@@ -160,9 +160,117 @@
   margin-top: 0.35rem;
   color: #64748b;
 }
+.workbook-attention {
+  border-left: 4px solid #e1a237;
+}
+.workbook-attention ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  padding-left: 20px;
+}
+.workbook-attention li {
+  padding: 8px;
+}
+.workbook-upload-actions {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  margin-top: 18px;
+}
+.workbook-upload-results {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+.workbook-upload label,
+.workbook-settings label {
+  display: grid;
+  gap: 8px;
+}
+.workbook-settings summary {
+  cursor: pointer;
+}
 .workbook-dashboard meter {
   display: block;
   width: 100%;
   min-width: 5rem;
   accent-color: #2563eb;
+}
+.workbook-print-root {
+  display: contents;
+}
+.workbook-print-heading {
+  display: none;
+}
+.workbook-print-only {
+  display: none;
+}
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+  body:has(.workbook-print-root)
+    *:not(:has(.workbook-print-root)):not(.workbook-print-root):not(
+      .workbook-print-root *
+    ) {
+    display: none !important;
+  }
+  body:has(.workbook-print-root),
+  body:has(.workbook-print-root) #root,
+  body:has(.workbook-print-root) .app-shell,
+  body:has(.workbook-print-root) .workspace,
+  body:has(.workbook-print-root) .content,
+  body:has(.workbook-print-root) .cop-reports {
+    display: block !important;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 0;
+    background: white;
+  }
+  .workbook-print-root {
+    display: block;
+    width: 100%;
+    color: black;
+    font-size: 9pt;
+  }
+  .workbook-print-root .workbook-print-heading {
+    display: block;
+  }
+  .workbook-print-root .workbook-print-only {
+    display: inline;
+  }
+  .workbook-print-root button,
+  .workbook-print-root label,
+  .workbook-print-root .workbook-trend {
+    display: none !important;
+  }
+  .workbook-print-root .panel {
+    box-shadow: none;
+    margin: 10px 0;
+    padding: 10px;
+    break-inside: avoid;
+  }
+  .workbook-print-root .table-scroll {
+    overflow: visible;
+  }
+  .workbook-print-root .data-table {
+    width: 100%;
+    min-width: 0;
+    font-size: 8pt;
+  }
+  .workbook-print-root .data-table th,
+  .workbook-print-root .data-table td {
+    padding: 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .workbook-print-root .workbook-card strong {
+    font-size: 16pt;
+  }
+  .workbook-print-root .workbook-cell-detail {
+    font-size: 7pt;
+  }
 }

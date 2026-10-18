@@ -15,6 +15,14 @@ type Context = {
   scopeConfirmed?: boolean;
   filename?: string;
 };
+export class WorkbookContextError extends Error {
+  constructor(
+    message: string,
+    public readonly kind: 'members' | 'finance',
+  ) {
+    super(message);
+  }
+}
 const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
 const count = (v: ExcelJS.CellValue) => {
   if (v === null || v === '') return null;
@@ -33,13 +41,18 @@ const cents = (v: ExcelJS.CellValue) => {
     throw new Error('Verwacht een numeriek bedrag; geen tekst of formule.');
   return Math.round(v * 100);
 };
-function declaredLocation(org: ReportOrganization, c: Context) {
+function declaredLocation(
+  org: ReportOrganization,
+  c: Context,
+  kind: 'members' | 'finance',
+) {
   if (
     c.scopeConfirmed !== true ||
     !org.locations.some((l) => l.id === c.locationId)
   )
-    throw new Error(
+    throw new WorkbookContextError(
       'Dit bestand noemt geen club. Kies de juiste locatie en bevestig de toewijzing.',
+      kind,
     );
   return c.locationId!;
 }
@@ -106,9 +119,12 @@ function members(
   org: ReportOrganization,
   c: Context,
 ): WorkbookSupplement {
-  const locationId = declaredLocation(org, c);
+  const locationId = declaredLocation(org, c, 'members');
   if (!c.asOf)
-    throw new Error('Vul de werkelijke peildatum van de ledenexport in.');
+    throw new WorkbookContextError(
+      'Vul de werkelijke peildatum van de ledenexport in.',
+      'members',
+    );
   const asOf = dateOnly(c.asOf);
   const s = w.getWorksheet('Leden')!;
   const columns = new Map<string, number>();
@@ -210,7 +226,7 @@ function finance(
   org: ReportOrganization,
   c: Context,
 ): WorkbookSupplement {
-  const locationId = declaredLocation(org, c);
+  const locationId = declaredLocation(org, c, 'finance');
   const description = w.getWorksheet('Omschrijving')?.getCell('A2').text ?? '';
   const m = description.match(
     /Periode (\d{2})-(\d{2})-(\d{4}) tot en met (\d{2})-(\d{2})-(\d{4})/,

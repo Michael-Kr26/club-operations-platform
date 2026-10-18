@@ -54,6 +54,10 @@ it('toont gezamenlijke clubcijfers, onbekende waarden, nul, bronconflicten en pe
   ).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'hp.xlsx' }));
   expect(select).toHaveBeenCalledWith('source');
+  const print = vi.spyOn(window, 'print').mockImplementation(() => {});
+  fireEvent.click(screen.getByRole('button', { name: 'Opslaan als PDF' }));
+  expect(print).toHaveBeenCalledTimes(1);
+  print.mockRestore();
   fireEvent.change(screen.getByLabelText('Overzichtsperiode'), {
     target: { value: 'month' },
   });

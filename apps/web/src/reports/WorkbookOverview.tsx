@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import type { CombinedPeriod, ForecastDashboard } from '@cop/contracts';
+import { downloadWorkbookCsv } from './workbook-export';
+import type {
+  CombinedPeriod,
+  ForecastDashboard,
+  MetricChange,
+} from '@cop/contracts';
 const count = (v: number | null | undefined) =>
   v == null
     ? 'Onbekend'
@@ -25,6 +30,31 @@ const dailyFields = [
   ['sold', 'Verkochte lidmaatschappen'],
   ['appointments', 'Afgeronde afspraken'],
 ] as const;
+function Change({
+  value,
+  money = false,
+}: {
+  value: MetricChange | undefined;
+  money?: boolean;
+}) {
+  if (value?.difference == null)
+    return <small className="workbook-cell-detail">Verschil onbekend</small>;
+  return (
+    <small className="workbook-cell-detail">
+      {value.difference > 0 ? '+' : ''}
+      {money
+        ? new Intl.NumberFormat('nl-NL', {
+            style: 'currency',
+            currency: 'EUR',
+          }).format(value.difference / 100)
+        : count(value.difference)}{' '}
+      ·{' '}
+      {value.percent == null
+        ? '% onbekend (vorige waarde nul)'
+        : `${value.percent > 0 ? '+' : ''}${count(value.percent)}%`}
+    </small>
+  );
+}
 export function WorkbookOverview({
   data,
   selectSource,
@@ -42,18 +72,44 @@ export function WorkbookOverview({
   );
   const current =
     periods.find((p) => p.period === chosen) ?? filled.at(-1) ?? periods.at(-1);
-  const prior = current
-    ? filled.filter((p) => p.period < current.period).at(-1)
-    : undefined;
   const columns = mode === 'day' ? dailyFields : fields;
   return (
-    <>
+    <div className="workbook-print-root">
+      <div className="workbook-print-heading">
+        <h1>{data.organization.name} · managementoverzicht</h1>
+        <p>
+          {data.dataset === 'demo' ? 'DEMO' : 'Werkelijke bronbestanden'} ·{' '}
+          {current?.period ?? 'Geen periode'} ·{' '}
+          {new Date().toLocaleDateString('nl-NL')}
+        </p>
+      </div>
       <section className="panel report-panel workbook-toolbar">
         <div>
           <span className="page-heading__eyebrow">Managementoverzicht</span>
           <h2>Alle clubs naast elkaar</h2>
           <p>Healthplanner-invoer · met bron en rapportageperiode</p>
         </div>
+        {
+          <div className="workbook-toolbar">
+            <button
+              type="button"
+              className="button"
+              onClick={() => window.print()}
+            >
+              Opslaan als PDF
+            </button>
+            <button
+              type="button"
+              className="button"
+              disabled={!current}
+              onClick={() => {
+                if (current) downloadWorkbookCsv(data, current, columns);
+              }}
+            >
+              CSV voor Excel
+            </button>
+          </div>
+        }
         <label>
           Weergave
           <select
@@ -85,6 +141,50 @@ export function WorkbookOverview({
       </section>
       {current ? (
         <>
+          <section
+            className="panel report-panel workbook-attention"
+            aria-label="Aandachtspunten"
+          >
+            <h2>Dit vraagt aandacht · {current.period}</h2>
+            {current.attention?.length ? (
+              <ul>
+                {current.attention.map((a, index) => (
+                  <li key={a.code + index}>
+                    <strong>
+                      {a.locationId
+                        ? data.organization.locations.find(
+                            (l) => l.id === a.locationId,
+                          )?.name
+                        : 'Organisatie'}
+                    </strong>
+                    <p>{a.message}</p>
+                    {a.sourceId && (
+                      <button
+                        type="button"
+                        className="button"
+                        onClick={() => selectSource(a.sourceId!)}
+                      >
+                        Onderliggende bron bekijken
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>
+                Geen signalen op basis van de beschikbare cijfers en ingestelde
+                grenzen. Dit is geen bewijs dat ontbrekende of toekomstige
+                gegevens volledig zijn.
+              </p>
+            )}
+          </section>
+          {current.comparison && (
+            <p className="report-notice">
+              Vergelijking met {current.comparison.previousPeriod}.{' '}
+              {current.comparison.reason ??
+                'Verschillen betreffen dezelfde brondefinitie in opeenvolgende afgesloten kalenderperiodes. Bij een vorige waarde van nul blijft het procentuele verschil onbekend.'}
+            </p>
+          )}
           <div className="workbook-cards">
             {columns.map(([key, label]) => (
               <article className="panel workbook-card" key={key}>
@@ -92,6 +192,9 @@ export function WorkbookOverview({
                 <strong>{count(current.totals[key])}</strong>
                 {key !== 'total' && key + 'Ratio' in current.totals && (
                   <small>{ratio(current.totals[key + 'Ratio'])}</small>
+                )}
+                {current.comparison && (
+                  <Change value={current.comparison.totals[key]} />
                 )}
               </article>
             ))}
@@ -106,20 +209,14 @@ export function WorkbookOverview({
                     {columns.map(([key, label]) => (
                       <th key={key}>{label}</th>
                     ))}
-                    <th>Verschil leden t.o.v. {prior?.period ?? 'onbekend'}</th>
                     <th>Bron</th>
                   </tr>
                 </thead>
                 <tbody>
                   {current.rows.map((r) => {
-                    const previous = prior?.rows.find(
+                    const differences = current.comparison?.rows.find(
                       (p) => p.locationId === r.locationId,
-                    );
-                    const key = mode === 'day' ? 'active' : 'total';
-                    const delta =
-                      r.values[key] != null && previous?.values[key] != null
-                        ? r.values[key]! - previous.values[key]!
-                        : null;
+                    )?.changes;
                     return (
                       <tr key={r.locationId}>
                         <th>
@@ -137,13 +234,11 @@ export function WorkbookOverview({
                                 {ratio(r.values[k + 'Ratio'])}
                               </small>
                             )}
+                            {current.comparison && (
+                              <Change value={differences?.[k]} />
+                            )}
                           </td>
                         ))}
-                        <td>
-                          {delta === null
-                            ? 'Onbekend'
-                            : `${delta > 0 ? '+' : ''}${count(delta)}`}
-                        </td>
                         <td>
                           {r.source ? (
                             <>
@@ -154,6 +249,9 @@ export function WorkbookOverview({
                               >
                                 {r.source.filename}
                               </button>
+                              <span className="workbook-print-only">
+                                {r.source.filename}
+                              </span>
                               <small className="workbook-cell-detail">
                                 Import{' '}
                                 {new Date(r.source.importedAt).toLocaleString(
@@ -177,7 +275,7 @@ export function WorkbookOverview({
               </table>
             </div>
           </section>
-          <section className="panel report-panel">
+          <section className="panel report-panel workbook-trend">
             <h2>Trend · leden zonder afspraak</h2>
             <p>
               Aantallen per bronperiode; ontbrekende waarden blijven onbekend.
@@ -238,6 +336,7 @@ export function WorkbookOverview({
         <div className="workbook-cards">
           {model.supplements.map((i) => {
             const r = i.report!;
+            const comparison = model.supplementChanges?.[i.id];
             const loc = r.kind === 'forecast' ? [r.locationId] : r.locationIds;
             return (
               <article className="panel workbook-card" key={i.id}>
@@ -260,6 +359,17 @@ export function WorkbookOverview({
                 <p>
                   {r.kind === 'forecast' ? `Export ${r.exportedOn}` : r.period}
                 </p>
+                {comparison && (
+                  <p className="workbook-muted">
+                    {comparison.reason ??
+                      `Vergelijking met ${comparison.previousPeriod}${r.kind === 'members' ? ' · verschil tussen peildatums, geen churn' : ''}`}
+                  </p>
+                )}
+                {r.kind === 'members' && comparison && (
+                  <div>
+                    Status Actief: <Change value={comparison.changes.active} />
+                  </div>
+                )}
                 {r.kind !== 'forecast' &&
                   r.cards.slice(0, 3).map((c) => (
                     <p key={c.label}>
@@ -272,6 +382,9 @@ export function WorkbookOverview({
                             }).format(c.value / 100)
                           : count(c.value)}
                       </strong>
+                      {r.kind === 'finance' && comparison && (
+                        <Change money value={comparison.changes[c.label]} />
+                      )}
                     </p>
                   ))}
                 <button
@@ -297,6 +410,6 @@ export function WorkbookOverview({
           ))}
         </ul>
       </details>
-    </>
+    </div>
   );
 }

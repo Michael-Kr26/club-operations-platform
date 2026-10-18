@@ -42,6 +42,7 @@ import {
 import { localReportAccess } from './local-access.js';
 import { workbookOverview } from './workbook-overview.js';
 import { WorkbookImports } from './workbook-imports.js';
+import { WorkbookInbox } from './workbook-inbox.js';
 import { OutlookSource } from './outlook-source.js';
 import {
   deliver,
@@ -88,6 +89,10 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
   readonly store = new ReportStore(this.pool);
   readonly workbooks = new WorkbookImports(this.pool);
   readonly dataDirectory = process.env.COP_DATA_DIR ?? join(homedir(), '.cop');
+  readonly workbookInbox = new WorkbookInbox(
+    this.dataDirectory,
+    this.workbooks,
+  );
   auth!: ReturnType<typeof betterAuth>;
   ready = false;
   private initializationError: string | null = null;
@@ -650,11 +655,26 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
     const org = await this.organization(principal.organizationId);
     const organization = scopedOrganization(org, principal);
     const imports = await this.workbooks.list(principal, dataset);
+    const preferences = await this.workbooks.preferences.read(org.id, dataset);
     return {
       organization,
       dataset,
       imports,
-      combined: workbookOverview(organization, imports),
+      combined: workbookOverview(organization, imports, preferences.thresholds),
+      preferences:
+        principal.locations === null &&
+        principal.permissions.includes('reports.manage')
+          ? preferences
+          : undefined,
+      inbox:
+        principal.locations === null &&
+        principal.permissions.includes('reports.manage')
+          ? this.workbookInbox.status(
+              org.id,
+              dataset,
+              preferences.inboxEnabled === true,
+            )
+          : undefined,
     };
   }
   async importWorkbook(
@@ -681,9 +701,91 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException((error as Error).message);
     }
   }
+  async previewWorkbook(
+    principal: Principal,
+    body: Parameters<WorkbookImports['import']>[2],
+  ) {
+    requirePermission(principal, principal.organizationId, 'reports.manage');
+    try {
+      return await this.workbooks.preview(
+        await this.organization(principal.organizationId),
+        body,
+      );
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
+    }
+  }
+  async workbookPreferences(
+    principal: Principal,
+    body: {
+      dataset: Dataset;
+      thresholds?: import('@cop/contracts').WorkbookThresholds;
+      forgetFilename?: string;
+      inboxEnabled?: boolean;
+    },
+  ) {
+    requirePermission(principal, principal.organizationId, 'reports.manage');
+    if (!body || !['real', 'demo'].includes(body.dataset))
+      throw new BadRequestException('Ongeldige dataset.');
+    try {
+      if (typeof body.inboxEnabled === 'boolean') {
+        if (body.inboxEnabled)
+          await this.workbookInbox.enable(
+            principal.organizationId,
+            body.dataset,
+          );
+        return await this.workbooks.preferences.inbox(
+          principal.organizationId,
+          body.dataset,
+          principal.userId,
+          body.inboxEnabled,
+        );
+      }
+      if (typeof body.forgetFilename === 'string')
+        return await this.workbooks.preferences.forget(
+          principal.organizationId,
+          body.dataset,
+          principal.userId,
+          body.forgetFilename,
+        );
+      if (!body.thresholds) throw new Error('Signaleringsgrenzen ontbreken.');
+      return await this.workbooks.preferences.thresholds(
+        principal.organizationId,
+        body.dataset,
+        principal.userId,
+        body.thresholds,
+      );
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
+    }
+  }
   async sourceStatus(principal: Principal) {
     requirePermission(principal, principal.organizationId, 'reports.manage');
     return this.outlook!.status(principal.organizationId);
+  }
+  async scanWorkbookInbox(principal: Principal, body: { dataset: Dataset }) {
+    requirePermission(principal, principal.organizationId, 'reports.manage');
+    if (
+      !body ||
+      !['real', 'demo'].includes(body.dataset) ||
+      !this.workbookInbox.available
+    )
+      throw new BadRequestException(
+        'Lokale importmap niet beschikbaar of ongeldige dataset.',
+      );
+    await this.workbookInbox.scan(
+      await this.organization(principal.organizationId),
+      body.dataset,
+    );
+    const prefs = await this.workbooks.preferences.read(
+      principal.organizationId,
+      body.dataset,
+    );
+    return this.workbookInbox.status(
+      principal.organizationId,
+      body.dataset,
+      prefs.inboxEnabled === true,
+    );
   }
   async tick(now = new Date()) {
     if (this.ticking || !this.ready) return;
@@ -769,6 +871,14 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
           );
         }
       }
+      // Process inboxes after all organizations' mail scheduling decisions.
+      // Existing files remain in place; at most three changed files per map/run.
+      if (this.workbookInbox.available)
+        for (const r of rows) {
+          const org = await this.organization(r.organization_id);
+          await this.workbookInbox.scan(org, 'real', now);
+          await this.workbookInbox.scan(org, 'demo', now);
+        }
       this.lastTick = now.toISOString();
       this.schedulerError = null;
     } catch {

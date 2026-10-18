@@ -9,14 +9,50 @@ Open **http://localhost:5173/rapportages/excel**. Ook bereikbaar via **Rapportag
 1. Bij `pnpm.cmd dev:local` opent het dashboard tijdelijk direct voor de lokale Sport Society-eigenaar. Bij de gewone API/Docker-start log je in op `/rapportages`; de voorbeeldrol in de zijbalk verleent geen API-toegang.
 2. Kies werkelijke gegevens of de afzonderlijke DEMO-dataset.
 3. Zet alle ondersteunde XLSX-bestanden en Healthplanner-mails (.eml) in één ZIP en upload die. Maximaal 20 MB ZIP, 50 bronbestanden, 5 MB per bestand en 50 MB uitgepakt. Losse XLSX/EML-upload blijft mogelijk. De inhoud bepaalt het formaat.
-4. Bij een ledenexport of omzetrapport: kies de juiste club en bevestig die toewijzing. Bij een ledenexport ook de werkelijke peildatum invullen. COP raadt geen club uit woonadressen, bestandsnaam, e-mailontvanger of telefoonnummers.
+4. Klik **Bestanden controleren**. Dit bewaart nog geen imports. Bij een ledenexport of omzetrapport: kies de juiste club en bevestig die toewijzing. Bij een ledenexport ook de werkelijke peildatum invullen. COP raadt geen club uit woonadressen, bestandsnaam, e-mailontvanger of telefoonnummers.
 5. Het gezamenlijke managementoverzicht wordt bijgewerkt: kies Wekelijks, Maandelijks of Dagelijks en de bronperiode. Het begint bij de laatste ingevulde periode, met alle toegestane clubs naast elkaar. Afzonderlijke bronweergaven blijven beschikbaar voor controle.
-6. Het ZIP-resultaat toont de status per bestand. Als clubinformatie ontbreekt, wijs ieder betrokken bestand onder het resultaat toe aan een club (ledenexport ook een peildatum). Bevestig de toewijzingen en klik opnieuw op Importeren. De standaardlocatie bovenaan geldt alleen wanneer je expliciet bevestigt dat alle niet afzonderlijk toegewezen bestanden zonder club daar thuishoren. Reeds verwerkte bestanden worden herkend.
+6. De controle toont het formaat, fouten, brondefinities en eventuele onthouden clubvoorstellen per bestand. Vul ontbrekende gegevens in en klik **Opnieuw controleren**. Na een gewijzigde toewijzing is een nieuwe controle nodig. Bevestig de getoonde clubs/peildatums en klik **Verwerk … geldige bestanden**. Reeds verwerkte bestanden worden herkend. Met **Bevestigde clubtoewijzingen onthouden** bewaart COP de juiste club voor hetzelfde formaat en dezelfde bestandsnaam/ZIP-pad (hoofdletterongevoelig). Peildatums worden nooit onthouden. Een voorstel moet bij iedere volgende import opnieuw bevestigd worden; afwijkende formaten nemen het voorstel niet over.
 7. Een onveilig/beschadigd ZIP of niet ondersteund bestandstype in het ZIP wordt vóór import afgewezen. Een inhoudelijk ongeldige XLSX/EML blokkeert de andere geldige bronbestanden niet. Na herladen of een onderbroken verwerking upload je hetzelfde ZIP opnieuw om te hervatten.
 
 De originelen blijven lokaal in `report_workbooks`, inclusief importmoment, inhoudshash en dataset. Exact dezelfde inhoud met dezelfde relevante importcontext wordt bij gelijktijdige import slechts eenmaal bewaard. Een anders toegewezen peildatum/club is een afzonderlijke expliciete import. Latere uploads worden niet bij eerdere snapshots opgeteld. Het ZIP-origineel wordt afzonderlijk gearchiveerd met een verwerkingssamenvatting; de bronbestanden hebben hun eigen historie en inhoudelijke fouten.
 
-Het gezamenlijke Healthplanner-overzicht gebruikt per club en bronperiode de nieuwste import. Ontbrekende waarden daarin worden nooit stilzwijgend uit een ouder bestand aangevuld. Conflicterende oudere bronnen krijgen een melding. Organisatietotalen zijn sommen van clubregistraties, geen unieke leden: ontbreekt één waarde, dan blijft het totaal onbekend. Percentages worden opnieuw berekend uit de opgetelde aantallen. Het verschil in leden betreft de vorige beschikbare ingevulde bronperiode (de kop toont welke), niet noodzakelijk de voorgaande kalenderweek/maand. De trendtabel met balkjes toont leden zonder afspraak per club/periode. Dewi-ledenexport, forecast en omzet houden zichtbaar hun eigen bronperiodes. Er wordt geen periode-onafhankelijke omzet-per-lid berekend.
+Het gezamenlijke Healthplanner-overzicht gebruikt per club en bronperiode de nieuwste import. Ontbrekende waarden daarin worden nooit stilzwijgend uit een ouder bestand aangevuld. Conflicterende oudere bronnen krijgen een melding. Organisatietotalen zijn sommen van clubregistraties, geen unieke leden: ontbreekt één waarde, dan blijft het totaal onbekend. Percentages worden opnieuw berekend uit de opgetelde aantallen. De trendtabel met balkjes toont leden zonder afspraak per club/periode. Dewi-ledenexport, forecast en omzet houden zichtbaar hun eigen bronperiodes. Er wordt geen periode-onafhankelijke omzet-per-lid berekend.
+
+## Vergelijken en aandachtspunten
+
+Bij HP-kerncijfers verschijnen absolute en procentuele verschillen met de direct voorgaande kalenderdag, ISO-week of kalendermaand. Alleen afgesloten kalenderperiodes worden vergeleken; de datumgrens volgt Europe/Amsterdam, inclusief zomertijd. Ontbreekt de vorige periode, dan wordt geen oudere periode als vervanging gebruikt. Ontbrekende waarden blijven onbekend. Een vorige waarde van nul geeft wel een absoluut verschil, maar geen procentueel verschil. Percentuele veranderingen worden uit de onderliggende aantallen berekend, niet opgeteld tussen clubs.
+
+Omzet wordt uitsluitend vergeleken met de vorige volledige kalendermaand van dezelfde club en hetzelfde kasstelselrapport. Een halve maand en een lopende maand krijgen geen volledige-maandvergelijking. Dewi-ledenexports vergelijken de laatste eerdere peildatum van dezelfde club: een snapshotverschil bewijst geen maandelijkse instroom, uitstroom of churn. De forecast blijft een afzonderlijke bronweergave.
+
+**Dit vraagt aandacht** vermeldt ontbrekende clubbronnen/kerncijfers, conflicterende oudere bronnen, een hoog aandeel zonder afspraak en een sterke stijging zonder afspraak ten opzichte van de vorige afgesloten periode. Waar beschikbaar opent de knop de bronweergave. Bij dagelijkse HP-bezoekcijfers wordt geen afspraakpercentage verzonnen zonder bewezen passende ledennoemer.
+
+Onder **Importmap, signaleringsgrenzen en clubtoewijzingen** kan een organisatiebeheerder grenzen instellen en een onthouden toewijzing vergeten. Voorstellen als startinstelling: aandeel zonder afspraak vanaf 30%, stijging zonder afspraak vanaf 20%, extra verversingsspeling 7 dagen. De verversingscontrole betreft de laatste ingevulde HP-periode per dag/week/maand; verwachte verversing is één broncadans plus de ingestelde speling na de periode-einddatum. Toekomstige kolommen veroorzaken geen verouderingsmelding en verbergen ook geen oude werkelijke bron. Dit zijn signalen, geen definitieve bedrijfsregels of automatische acties. Instellingen staan lokaal in `report_workbook_preferences`, gescheiden per organisatie en werkelijke/demo-dataset. Een locatiemanager kan uitsluitend eigen signalen/cijfers lezen en geen organisatievoorkeuren wijzigen.
+
+## Vaste importmap
+
+Bij `pnpm.cmd dev:local` is een optionele importmap beschikbaar. Schakel hem in onder de instellingen; daar staat het werkelijke pad. Standaard voor de echte Sport Society-bronnen: `%USERPROFILE%\.cop\inbox\sport-society\real`. De demo-map eindigt op `demo`; iedere organisatie heeft een afzonderlijke map. Buiten de Dockerloze lokale serverstand is de functie uitgeschakeld.
+
+COP controleert de map ongeveer elke 30 seconden zolang het programma en de computer aan staan. De knop **Map nu controleren** voert ook een controle uit. Alleen reguliere ZIP/XLSX/EML-bestanden direct in die map worden gelezen; geen submappen of symbolische links. Een bestand moet minimaal drie seconden ongewijzigd zijn. Per scan maximaal drie gewijzigde bestanden, maximaal 500 bronbestanden in de map; normale ZIP/XLSX-groottegrenzen blijven gelden. Zet grote bestanden eerst buiten de map klaar en kopieer ze daarna naar de importmap. Bestanden worden niet verwijderd of verplaatst. Originele imports blijven daarnaast in de database. Een herstart verwerkt nog aanwezige bestanden veilig opnieuw via de bestaande duplicaatcontrole.
+
+Het inschakelen staat expliciet toe dat bestaande bevestigde clubvoorstellen voor hetzelfde formaat automatisch gebruikt worden. Een ontbrekende club of peildatum wordt niet geraden. Gebruik voor zo'n export de uploadcontrole in het dashboard; andere geldige bestanden uit een ZIP worden al wel verwerkt. De mapstatus en importhistorie tonen welke bestanden aandacht nodig hebben. Wijzigingen worden in het open dashboard iedere 30 seconden opgehaald als mapimport is ingeschakeld. Bij een uitgeschakelde computer staat alles stil; na opnieuw starten worden aanwezige bestanden weer opgepakt. Internet is voor deze lokale map niet nodig.
+
+Optioneel voor een geautomatiseerde export met ontbrekende metadata: zet naast `leden.xlsx` een klein bestand `leden.xlsx.cop.json` (maximaal 16 KB) met de expliciete broncontext, bijvoorbeeld:
+
+```json
+{
+  "locationId": "barneveld",
+  "asOf": "2026-10-18",
+  "scopeConfirmed": true
+}
+```
+
+Voor een ZIP heet dit bestand bijvoorbeeld `pakket.zip.cop.json` en kan het `fileContexts` bevatten met dezelfde structuur per exacte bestandsnaam/ZIP-pad. De exportautomatisering moet bij iedere nieuwe export de echte peildatum bijwerken. De JSON kan dataset, bestandsinhoud en tenant niet omleiden. Er horen geen wachtwoorden of mailgeheimen in. De server bewaart de effectieve locatie/peildatum in de import, maar gaat een oude datum nooit zelf vervangen door vandaag.
+
+## Delen en downloaden
+
+**Opslaan als PDF** opent het afdrukvenster van de browser. Kies daar **Opslaan als PDF**. Een A4-landschapsweergave toont het geselecteerde managementoverzicht, bronverwijzingen, aandachtspunten en de afzonderlijke Dewi-/omzetperiodes; navigatie, uploads, instellingen en de lange historische trendtabel worden weggelaten. De organisatie, gekozen periode en eventuele DEMO-markering staan bovenaan. De uiteindelijke paginering moet in het afdrukvoorbeeld op de werklaptop gecontroleerd worden.
+
+**CSV voor Excel** downloadt de geselecteerde HP-periode met clubcijfers, absolute/procentuele verschillen, bronbestanden, importmomenten, signalen en het expliciet als clubregistraties gemarkeerde totaal. De CSV gebruikt puntkomma's, Nederlandse decimale komma's en UTF-8; onbekend blijft onbekend. Excel-formules in bijvoorbeeld bronbestandsnamen worden onschadelijk gemaakt. Dit is een CSV-bestand, geen opgemaakte XLSX-werkmap. Er wordt niets naar Chico of anderen verstuurd.
 
 Er is geen betaalde SaaS of AI-model nodig voor de verwerking. Deze dashboards veranderen geen mailplanning en versturen geen e-mails. Automatische bronmailtoegang is nog steeds een afzonderlijke, geparkeerde koppeling.
 
@@ -66,6 +102,8 @@ Alle API-routes staan onder `/api/v1/organizations/:organizationId/reports/workb
 Validatie omvat o.a. bestandsgrootte/uitgepakte XLSX-grootte, verwachte kopregels, aaneengesloten maanden, niet-negatieve gehele aantallen, formulevorm, bronorganisatie, financiële aansluiting en dubbele klantnummers. Onbekende formaten worden met uitleg afgewezen en niet stilzwijgend aan een willekeurige bron gekoppeld.
 
 ## Verificatie
+
+Gemaksfuncties gecontroleerd op 18 oktober 2026: alle 102 tests (77 API, 25 web), lint, formattering, TypeScript en productiebuild geslaagd. Extra scenario's: vooraf controleren zonder import, onthouden/vergeten clubtoewijzingen zonder een oude peildatum te hergebruiken, formaatwijzigingen, gescheiden voorkeuren per tenant/dataset, kalender-/jaar-/zomertijdgrenzen, nulnoemer, ontbrekende vorige periode, gedeeltelijke omzetmaanden, signaalgrenzen, mapimport met symbolische links/aanvullende metadata, gelijktijdige scans/herstart en veilige CSV-cellen. Een aanvullende lokale HTTP-controle gebruikte de vijf echte bestanden, controleerde voorkeuren na herstart en importeerde een echt HP-werkboek via de afzonderlijke demo-importmap. Bestanden in die map bleven bytegelijk; herhaald scannen telde niets dubbel. PDF-paginering is niet visueel bevestigd; controleer het afdrukvoorbeeld op de werklaptop.
 
 Unit- en integratietests dekken de bronberekeningen, ontbrekende waarden, dubbele imports, bronorganisatie, tenant-/clubscope, demo-scheiding en behoud van originelen. De vijf werkelijk verstrekte bestanden zijn daarnaast via de lokale API geïmporteerd, gedownload en na afsluiten/herstart teruggelezen. Voor leden/omzet is in deze tijdelijke controle een testtoewijzing gebruikt; dat bevestigt niet de echte club van die bronbestanden.
 

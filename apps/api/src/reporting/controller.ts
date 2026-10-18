@@ -239,6 +239,36 @@ export class ReportsController {
       body,
     );
   }
+  @Post('workbooks/preview') async previewWorkbook(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Body() body: Parameters<ReportingService['previewWorkbook']>[1],
+  ) {
+    return this.reports.previewWorkbook(
+      await this.access(req, org, true),
+      body,
+    );
+  }
+  @Post('workbooks/inbox') async scanWorkbookInbox(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Body() body: Parameters<ReportingService['scanWorkbookInbox']>[1],
+  ) {
+    return this.reports.scanWorkbookInbox(
+      await this.access(req, org, true),
+      body,
+    );
+  }
+  @Post('workbooks/preferences') async workbookPreferences(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Body() body: Parameters<ReportingService['workbookPreferences']>[1],
+  ) {
+    return this.reports.workbookPreferences(
+      await this.access(req, org, true),
+      body,
+    );
+  }
   @Get('workbooks/:id/original') async workbookOriginal(
     @Req() req: FastifyRequest,
     @Param('organizationId') org: string,

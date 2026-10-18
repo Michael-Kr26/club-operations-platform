@@ -6,12 +6,17 @@ import type {
   Principal,
   ReportOrganization,
   WorkbookReport,
+  WorkbookPreview,
 } from '@cop/contracts';
 import { readImportZip } from './zip-source.js';
-import { parseWorkbook } from './workbook-source.js';
+import { parseWorkbook, WorkbookContextError } from './workbook-source.js';
+import { mappingKey, WorkbookPreferenceStore } from './workbook-preferences.js';
 
 export class WorkbookImports {
-  constructor(private pool: Pool) {}
+  readonly preferences: WorkbookPreferenceStore;
+  constructor(private pool: Pool) {
+    this.preferences = new WorkbookPreferenceStore(pool);
+  }
   async import(
     org: ReportOrganization,
     principal: Principal,
@@ -22,6 +27,7 @@ export class WorkbookImports {
       locationId?: string;
       asOf?: string;
       scopeConfirmed?: boolean;
+      rememberMapping?: boolean;
       fileContexts?: Record<
         string,
         { locationId?: string; asOf?: string; scopeConfirmed?: boolean }
@@ -98,6 +104,21 @@ export class WorkbookImports {
         principal.userId,
       ],
     );
+    if (
+      body.rememberMapping === true &&
+      body.scopeConfirmed === true &&
+      report &&
+      (report.kind === 'members' || report.kind === 'finance')
+    ) {
+      await this.preferences.remember(
+        org.id,
+        body.dataset,
+        principal.userId,
+        body.filename,
+        report.kind,
+        locationId!,
+      );
+    }
     if (result.rows.length)
       return {
         id,
@@ -110,6 +131,95 @@ export class WorkbookImports {
       [org.id, body.dataset, hash],
     );
     return { ...existing.rows[0], duplicate: true };
+  }
+  async preview(
+    org: ReportOrganization,
+    body: Parameters<WorkbookImports['import']>[2],
+  ): Promise<WorkbookPreview[]> {
+    if (
+      !body ||
+      !['real', 'demo'].includes(body.dataset) ||
+      typeof body.filename !== 'string' ||
+      !/\.(zip|xlsx|eml)$/i.test(body.filename) ||
+      typeof body.content !== 'string' ||
+      body.content.length > 26_666_668 ||
+      !/^[A-Za-z0-9+/]*={0,2}$/.test(body.content)
+    )
+      throw new Error('Gebruik een geldig ZIP-, XLSX- of EML-bestand.');
+    const bytes = Buffer.from(body.content, 'base64');
+    const files = /\.zip$/i.test(body.filename)
+      ? readImportZip(bytes)
+      : [{ filename: body.filename, bytes }];
+    const preferences = await this.preferences.read(org.id, body.dataset);
+    const results: WorkbookPreview[] = [];
+    for (const file of files) {
+      if (!file.bytes.length || file.bytes.length > 5_000_000)
+        throw new Error('Maximaal 5 MB per bronbestand.');
+      const context =
+        body.fileContexts && Object.hasOwn(body.fileContexts, file.filename)
+          ? body.fileContexts[file.filename]
+          : undefined;
+      const mapping = Object.hasOwn(
+        preferences.mappings,
+        mappingKey(file.filename),
+      )
+        ? preferences.mappings[mappingKey(file.filename)]
+        : undefined;
+      let locationId =
+        context?.locationId || body.locationId || mapping?.locationId || null;
+      const asOf = context?.asOf || body.asOf || null;
+      const suggested = !context?.locationId && !body.locationId && !!mapping;
+      let report: WorkbookReport | null = null,
+        error: string | null = null,
+        kind: WorkbookReport['kind'] | null = null,
+        needs = false;
+      try {
+        report = await parseWorkbook(file.bytes, org, {
+          filename: file.filename,
+          locationId: locationId ?? undefined,
+          asOf: asOf ?? undefined,
+          scopeConfirmed: true,
+        });
+        kind = report.kind;
+        // A saved proposal applies only to the confirmed source format.
+        if (
+          suggested &&
+          (kind === 'members' || kind === 'finance') &&
+          kind !== mapping?.kind
+        )
+          throw new Error(
+            'Bestandsformaat wijkt af van de onthouden toewijzing. Kies de locatie opnieuw.',
+          );
+      } catch (e) {
+        error = (e as Error).message.slice(0, 1000);
+        if (e instanceof WorkbookContextError) {
+          kind = e.kind;
+          needs = true;
+        }
+      }
+      if (
+        suggested &&
+        (kind === 'members' || kind === 'finance') &&
+        kind !== mapping?.kind
+      ) {
+        locationId = null;
+        error =
+          'Bestandsformaat wijkt af van de onthouden toewijzing. Kies de locatie opnieuw.';
+        needs = true;
+      }
+      results.push({
+        filename: file.filename,
+        kind,
+        status: error ? (needs ? 'needs-context' : 'invalid') : 'ready',
+        error,
+        locationId:
+          report?.kind === 'forecast' ? report.locationId : locationId,
+        asOf,
+        suggested,
+        warnings: report?.warnings ?? [],
+      });
+    }
+    return results;
   }
   async importZip(
     org: ReportOrganization,

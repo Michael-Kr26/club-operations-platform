@@ -202,3 +202,20 @@ export const reportWorkbooks = pgTable(
     ),
   ],
 );
+
+export const workbookPreferences = pgTable(
+  'report_workbook_preferences',
+  {
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => reportOrganizations.id),
+    dataset: text('dataset').notNull(),
+    settings: jsonb('settings').notNull(),
+    updatedAt: time('updated_at'),
+    updatedBy: text('updated_by').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.organizationId, t.dataset] }),
+    check('workbook_preferences_dataset', sql`${t.dataset} IN ('real','demo')`),
+  ],
+);
