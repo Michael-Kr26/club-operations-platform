@@ -37,6 +37,7 @@ export interface ForecastDashboard {
   organization: ReportOrganization;
   dataset: Dataset;
   imports: ForecastImport[];
+  combined?: CombinedWorkbookDashboard;
 }
 
 export interface WorkbookSupplement {
@@ -53,3 +54,20 @@ export interface WorkbookSupplement {
   categories: { name: string; amountCents: number; count: number | null }[];
 }
 export type WorkbookReport = DewiForecast | WorkbookSupplement;
+
+export interface CombinedPeriod {
+  period: string;
+  type: 'week' | 'month' | 'day';
+  rows: {
+    locationId: string;
+    values: Record<string, number | null>;
+    source: { id: string; filename: string; importedAt: string } | null;
+    conflict: boolean;
+  }[];
+  totals: Record<string, number | null>;
+}
+export interface CombinedWorkbookDashboard {
+  periods: CombinedPeriod[];
+  supplements: ForecastImport[];
+  warnings: string[];
+}

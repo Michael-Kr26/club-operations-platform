@@ -9,7 +9,7 @@ import { AppModule } from './app.module.js';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ bodyLimit: 8_000_000 }),
+    new FastifyAdapter({ bodyLimit: 28_000_000 }),
   );
 
   app.setGlobalPrefix('api/v1');

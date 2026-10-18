@@ -5,10 +5,15 @@ import { join } from 'node:path';
 import { Pool } from 'pg';
 import type { Principal } from '@cop/contracts';
 import { startLocalDatabase } from '../../scripts/local-database.mjs';
+import { zipFixture } from './zip-fixtures.js';
 import { WorkbookImports } from './workbook-imports.js';
 import { ReportStore, sportSociety } from './store.js';
 import { requirePermission } from './service.js';
-import { forecastFixture, healthplannerFixture } from './workbook-fixtures.js';
+import {
+  forecastFixture,
+  healthplannerFixture,
+  membersFixture,
+} from './workbook-fixtures.js';
 let directory: string,
   database: Awaited<ReturnType<typeof startLocalDatabase>>,
   pool: Pool,
@@ -103,5 +108,64 @@ describe('lokaal bewaarde werkboeken', () => {
     expect(hp.locationIds).toEqual(['barneveld']);
     expect(hp.rows.every((r) => r.locationId === 'barneveld')).toBe(true);
     expect(hp.cards).toEqual([]);
+  });
+  it('verwerkt één ZIP gedeeltelijk, bewaart originelen en hervat met expliciete context zonder dubbeltelling', async () => {
+    const bytes = zipFixture([
+      { filename: 'hp.xlsx', bytes: await healthplannerFixture() },
+      { filename: 'leden.xlsx', bytes: await membersFixture() },
+      { filename: 'kapot.xlsx', bytes: Buffer.from('broken') },
+    ]);
+    const body = {
+      dataset: 'demo' as const,
+      filename: 'pakket.zip',
+      content: bytes.toString('base64'),
+    };
+    const first = await store.importZip(sportSociety, admin, body);
+    expect(first.results.map((r) => r.status)).toEqual([
+      'accepted',
+      'rejected',
+      'rejected',
+    ]);
+    expect(
+      (await store.original(admin.organizationId, first.id)).original,
+    ).toEqual(bytes);
+    const second = await store.importZip(sportSociety, admin, {
+      ...body,
+      fileContexts: {
+        'leden.xlsx': {
+          locationId: 'barneveld',
+          asOf: '2026-10-18',
+          scopeConfirmed: true,
+        },
+      },
+    });
+    expect(second.id).toBe(first.id);
+    expect(second.results.map((r) => r.status)).toEqual([
+      'accepted',
+      'accepted',
+      'rejected',
+    ]);
+    expect(second.results[0]!.duplicate).toBe(true);
+    const third = await store.importZip(sportSociety, admin, {
+      ...body,
+      fileContexts: {
+        'leden.xlsx': {
+          locationId: 'barneveld',
+          asOf: '2026-10-18',
+          scopeConfirmed: true,
+        },
+      },
+    });
+    expect(third.results.every((r) => r.duplicate)).toBe(true);
+    expect(await store.original('other', first.id)).toBeNull();
+    const scoped = await store.list(
+      { ...admin, locations: ['harskamp'] },
+      'demo',
+    );
+    expect(
+      scoped.some(
+        (r) => r.filename === 'pakket.zip' || r.report?.kind === 'members',
+      ),
+    ).toBe(false);
   });
 });

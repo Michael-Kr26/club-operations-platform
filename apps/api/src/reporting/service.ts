@@ -40,6 +40,7 @@ import {
   checkRealRecipients,
 } from './microsoft-mail.js';
 import { localReportAccess } from './local-access.js';
+import { workbookOverview } from './workbook-overview.js';
 import { WorkbookImports } from './workbook-imports.js';
 import { OutlookSource } from './outlook-source.js';
 import {
@@ -647,10 +648,13 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
     if (!['real', 'demo'].includes(dataset))
       throw new BadRequestException('Ongeldige dataset.');
     const org = await this.organization(principal.organizationId);
+    const organization = scopedOrganization(org, principal);
+    const imports = await this.workbooks.list(principal, dataset);
     return {
-      organization: scopedOrganization(org, principal),
+      organization,
       dataset,
-      imports: await this.workbooks.list(principal, dataset),
+      imports,
+      combined: workbookOverview(organization, imports),
     };
   }
   async importWorkbook(
@@ -661,6 +665,18 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
     const org = await this.organization(principal.organizationId);
     try {
       return await this.workbooks.import(org, principal, body);
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
+    }
+  }
+  async importWorkbookZip(
+    principal: Principal,
+    body: Parameters<WorkbookImports['import']>[2],
+  ) {
+    requirePermission(principal, principal.organizationId, 'reports.manage');
+    const org = await this.organization(principal.organizationId);
+    try {
+      return await this.workbooks.importZip(org, principal, body);
     } catch (error) {
       throw new BadRequestException((error as Error).message);
     }

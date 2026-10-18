@@ -9,6 +9,7 @@ import type {
   Principal,
   WorkbookSupplement,
 } from '@cop/contracts';
+import { WorkbookOverview } from './WorkbookOverview';
 import './reports.css';
 import './workbooks.css';
 
@@ -523,7 +524,19 @@ export function WorkbookDashboard() {
     [confirmed, setConfirmed] = useState(false),
     [file, setFile] = useState<File | null>(null),
     [message, setMessage] = useState(''),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [detail, setDetail] = useState(false),
+    [zipResults, setZipResults] = useState<
+      {
+        filename: string;
+        status: string;
+        error: string | null;
+        duplicate: boolean;
+      }[]
+    >([]),
+    [contexts, setContexts] = useState<
+      Record<string, { locationId?: string; asOf?: string }>
+    >({});
   const access = useQuery({
     queryKey: ['reports-access', org],
     queryFn: () => api<Principal>(`${base}/access`),
@@ -548,7 +561,7 @@ export function WorkbookDashboard() {
       <section className="page-heading">
         <div>
           <span className="page-heading__eyebrow">Rapportages · bestanden</span>
-          <h1>Excel-dashboard</h1>
+          <h1>Managementdashboard</h1>
           <p>
             Van bronbestand naar overzicht. Lokaal opgeslagen, per organisatie
             en locatie.
@@ -578,6 +591,20 @@ export function WorkbookDashboard() {
       )}
       {access.data && !access.error && (
         <>
+          {data.data && (
+            <WorkbookOverview
+              data={data.data}
+              selectSource={(id) => {
+                setSelected(id);
+                setDetail(true);
+              }}
+            />
+          )}
+          <button className="button" onClick={() => setDetail(!detail)}>
+            {detail
+              ? 'Bronweergave sluiten'
+              : 'Afzonderlijk bronbestand bekijken'}
+          </button>
           <section className="panel report-panel workbook-toolbar">
             <label>
               Gegevens
@@ -587,6 +614,9 @@ export function WorkbookDashboard() {
                 onChange={(e) => {
                   setDataset(e.target.value as Dataset);
                   setSelected('');
+                  setZipResults([]);
+                  setContexts({});
+                  setMessage('');
                 }}
               >
                 <option value="real">Werkelijke bronbestanden</option>
@@ -598,7 +628,10 @@ export function WorkbookDashboard() {
               <select
                 aria-label="Dashboardbron"
                 value={item?.id ?? ''}
-                onChange={(e) => setSelected(e.target.value)}
+                onChange={(e) => {
+                  setSelected(e.target.value);
+                  setDetail(true);
+                }}
               >
                 <option value="" disabled>
                   Nog geen geldig bronbestand
@@ -618,10 +651,10 @@ export function WorkbookDashboard() {
               Er worden geen fictieve gegevens automatisch aangemaakt.
             </p>
           )}
-          {report?.kind === 'forecast' && (
+          {detail && report?.kind === 'forecast' && (
             <ForecastView key={item!.id} report={report} />
           )}
-          {report && report.kind !== 'forecast' && (
+          {detail && report && report.kind !== 'forecast' && (
             <SupplementView
               key={item!.id}
               report={report}
@@ -640,13 +673,15 @@ export function WorkbookDashboard() {
           )}
           {manage && (
             <section className="panel report-panel">
-              <h2>Bestand uploaden</h2>
+              <h2>Alles in één ZIP uploaden</h2>
               <p>
-                Maximaal 5 MB. Het formaat wordt automatisch herkend. De
-                forecast en Healthplanner bevatten clubinformatie; bij een
-                ledenexport of omzetrapport zijn locatie en bevestiging
-                verplicht. Alleen de ledenexport vereist ook de werkelijke
-                peildatum.
+                Voeg alle XLSX-bestanden en Healthplanner-mails (.eml) toe aan
+                één ZIP. Maximaal 20 MB ZIP, 50 bestanden en 5 MB per
+                bronbestand. COP herkent de inhoud, bewaart de originelen en
+                werkt het gezamenlijke dashboard bij. Zonder clubinformatie
+                blijft een bestand onverwerkt tot je de locatie bevestigt. Je
+                kunt het ZIP dan opnieuw verwerken; bekende bestanden worden
+                niet dubbel geteld.
               </p>
               <form
                 onSubmit={(e) => {
@@ -656,27 +691,52 @@ export function WorkbookDashboard() {
                     setMessage('');
                     try {
                       if (!file) throw new Error('Selecteer een bestand.');
-                      if (file.size > 5_000_000)
-                        throw new Error('Maximaal 5 MB.');
-                      let binary = '';
-                      for (const b of new Uint8Array(await file.arrayBuffer()))
-                        binary += String.fromCharCode(b);
+                      const isZip = /\.zip$/i.test(file.name);
+                      if (file.size > (isZip ? 20_000_000 : 5_000_000))
+                        throw new Error(
+                          isZip ? 'Maximaal 20 MB ZIP.' : 'Maximaal 5 MB.',
+                        );
+                      const content = await new Promise<string>(
+                        (resolve, reject) => {
+                          const reader = new FileReader();
+                          reader.onload = () =>
+                            resolve(String(reader.result).split(',')[1]!);
+                          reader.onerror = () =>
+                            reject(
+                              new Error('Bestand kon niet worden gelezen.'),
+                            );
+                          reader.readAsDataURL(file);
+                        },
+                      );
                       const result = await api<{
                         id: string;
                         duplicate: boolean;
                         status: string;
                         error: string | null;
-                      }>(`${base}/workbooks`, {
+                        results?: typeof zipResults;
+                        summary?: string;
+                      }>(`${base}/workbooks${isZip ? '/zip' : ''}`, {
                         filename: file.name,
-                        content: btoa(binary),
+                        content,
                         dataset,
                         locationId: location || undefined,
                         asOf: asOf || undefined,
                         scopeConfirmed: confirmed,
+                        fileContexts: Object.fromEntries(
+                          Object.entries(contexts).map(([name, c]) => [
+                            name,
+                            { ...c, scopeConfirmed: confirmed },
+                          ]),
+                        ),
                       });
                       await client.invalidateQueries({
                         queryKey: ['report-workbooks', org, dataset],
                       });
+                      if (result.results) {
+                        setZipResults(result.results);
+                        setMessage(result.summary ?? 'ZIP verwerkt.');
+                        return;
+                      }
                       if (result.status === 'rejected')
                         throw new Error(result.error ?? 'Import afgewezen.');
                       setSelected(result.id);
@@ -695,16 +755,20 @@ export function WorkbookDashboard() {
               >
                 <div className="report-fields">
                   <label>
-                    Excel of managementmail
+                    ZIP, Excel of managementmail
                     <input
                       type="file"
-                      accept=".xlsx,.eml"
+                      accept=".zip,.xlsx,.eml"
                       required
-                      onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                      onChange={(e) => {
+                        setFile(e.target.files?.[0] ?? null);
+                        setZipResults([]);
+                        setContexts({});
+                      }}
                     />
                   </label>
                   <label>
-                    Locatie bij export zonder club
+                    Standaardlocatie voor bestanden zonder club
                     <select
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
@@ -732,24 +796,90 @@ export function WorkbookDashboard() {
                     checked={confirmed}
                     onChange={(e) => setConfirmed(e.target.checked)}
                   />
-                  Ik bevestig de gekozen locatie en, bij een ledenexport, de
-                  werkelijke peildatum.
+                  Ik bevestig de gekozen locaties voor bestanden zonder club en
+                  de werkelijke peildatums van ledenexports. De standaardlocatie
+                  geldt voor alle bestanden zonder eigen toewijzing.
                 </label>
                 <button className="button button--primary" disabled={busy}>
                   {busy
-                    ? 'Bestand verwerken…'
+                    ? 'Bestanden verwerken…'
                     : 'Importeren en dashboard openen'}
                 </button>
               </form>
               {message && <p role="status">{message}</p>}
+              {zipResults.length > 0 && (
+                <>
+                  <h3>Resultaat per bestand</h3>
+                  <p>
+                    Vul bij ontbrekende clubinformatie de toewijzing hieronder
+                    in, bevestig die hierboven en klik opnieuw op Importeren.
+                    Verwerkte bestanden blijven behouden.
+                  </p>
+                  {zipResults.map((r) => (
+                    <div className="panel report-panel" key={r.filename}>
+                      <strong>{r.filename}</strong>
+                      <p>
+                        {r.status === 'accepted'
+                          ? r.duplicate
+                            ? 'Al bekend'
+                            : 'Verwerkt'
+                          : r.error}
+                      </p>
+                      {r.status === 'rejected' && (
+                        <div className="report-fields">
+                          <label>
+                            Locatie voor {r.filename}
+                            <select
+                              value={contexts[r.filename]?.locationId ?? ''}
+                              onChange={(e) =>
+                                setContexts({
+                                  ...contexts,
+                                  [r.filename]: {
+                                    ...contexts[r.filename],
+                                    locationId: e.target.value,
+                                  },
+                                })
+                              }
+                            >
+                              <option value="">Geen toewijzing</option>
+                              {data.data?.organization.locations.map((l) => (
+                                <option key={l.id} value={l.id}>
+                                  {l.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            Peildatum ledenexport
+                            <input
+                              type="date"
+                              value={contexts[r.filename]?.asOf ?? ''}
+                              onChange={(e) =>
+                                setContexts({
+                                  ...contexts,
+                                  [r.filename]: {
+                                    ...contexts[r.filename],
+                                    asOf: e.target.value,
+                                  },
+                                })
+                              }
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
             </section>
           )}
           <section className="panel report-panel">
             <h2>Importhistorie</h2>
             <p>
               Nieuwe uploads overschrijven geen originele bestanden. Kies
-              hierboven expliciet welk bronbestand je bekijkt; er wordt geen
-              omzet of ledenstand tussen imports opgeteld.
+              desgewenst een bronbestand voor details. Het gezamenlijke
+              overzicht gebruikt de nieuwste import per club en bronperiode; een
+              ZIP telt zelf niet als extra bron.
             </p>
             <div className="table-scroll">
               <table className="data-table">

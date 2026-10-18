@@ -229,6 +229,16 @@ export class ReportsController {
   ) {
     return this.reports.importWorkbook(await this.access(req, org, true), body);
   }
+  @Post('workbooks/zip') async importWorkbookZip(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Body() body: Parameters<ReportingService['importWorkbookZip']>[1],
+  ) {
+    return this.reports.importWorkbookZip(
+      await this.access(req, org, true),
+      body,
+    );
+  }
   @Get('workbooks/:id/original') async workbookOriginal(
     @Req() req: FastifyRequest,
     @Param('organizationId') org: string,
