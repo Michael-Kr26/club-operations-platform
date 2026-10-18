@@ -30,6 +30,11 @@ export async function startLocalDatabase(directory, { port = 5433 } = {}) {
     closed = true;
     try {
       await server?.stop();
+      // The socket bridge posts client-close handlers with setImmediate, and
+      // those handlers still inspect transaction state. Drain that turn before
+      // closing PGlite, otherwise a deferred handler can crash the process and
+      // leave our lock file behind.
+      await new Promise((resolve) => setImmediate(resolve));
     } finally {
       try {
         await db?.close();

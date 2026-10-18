@@ -15,6 +15,7 @@ import {
   SettingsPage,
   NotFoundPage,
 } from './pages/ModulePages';
+import { WorkbookDashboard } from './reports/WorkbookDashboard';
 import { ReportsPage } from './reports/ReportsPage';
 import { useQuery } from '@tanstack/react-query';
 import type { HealthResponse } from '@cop/contracts';
@@ -533,6 +534,11 @@ export function App() {
             <Route path="/taken" element={<TasksPage />} />
             <Route path="/locaties" element={<LocationsPage />} />
             <Route path="/locaties/:slug" element={<LocationDetailPage />} />
+            <Route path="/rapportages/excel" element={<WorkbookDashboard />} />
+            <Route
+              path="/organisaties/:organizationSlug/rapportages/excel"
+              element={<WorkbookDashboard />}
+            />
             <Route path="/rapportages" element={<ReportsPage />} />
             <Route path="/instellingen" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />

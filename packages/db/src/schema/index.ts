@@ -165,3 +165,40 @@ export const reportAudit = pgTable('report_audit', {
   createdAt: time('created_at'),
   detail: jsonb('detail').notNull(),
 });
+
+export const reportWorkbooks = pgTable(
+  'report_workbooks',
+  {
+    id: text('id').primaryKey(),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => reportOrganizations.id),
+    dataset: text('dataset').notNull(),
+    locationId: text('location_id'),
+    filename: text('filename').notNull(),
+    hash: text('hash').notNull(),
+    original: bytea('original').notNull(),
+    report: jsonb('report'),
+    status: text('status').notNull(),
+    error: text('error'),
+    importedAt: time('imported_at'),
+    importedBy: text('imported_by').notNull(),
+  },
+  (t) => [
+    uniqueIndex('report_workbook_unique').on(
+      t.organizationId,
+      t.dataset,
+      t.hash,
+    ),
+    index('report_workbook_scope').on(
+      t.organizationId,
+      t.dataset,
+      t.locationId,
+    ),
+    check('report_workbook_dataset', sql`${t.dataset} IN ('real','demo')`),
+    check(
+      'report_workbook_status',
+      sql`${t.status} IN ('accepted','rejected')`,
+    ),
+  ],
+);

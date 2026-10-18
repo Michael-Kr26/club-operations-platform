@@ -15,6 +15,13 @@
       "when": 1791392306997,
       "tag": "0001_microsoft_mail",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792308782633,
+      "tag": "0002_workbook_dashboards",
+      "breakpoints": true
     }
   ]
 }

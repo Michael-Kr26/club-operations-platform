@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { REPORT_RULES, REPORT_RULES_VERSION } from '@cop/contracts';
 import type {
@@ -230,6 +230,16 @@ export function ReportsPage() {
         <div>
           <span className="page-heading__eyebrow">Management · {org}</span>
           <h1>Ochtendrapport & churn</h1>
+          <Link
+            className="button button--primary"
+            to={
+              organizationSlug
+                ? `/organisaties/${encodeURIComponent(org)}/rapportages/excel`
+                : '/rapportages/excel'
+            }
+          >
+            Excel-dashboard openen
+          </Link>
           <p>Alle clubs naast elkaar, met controleerbare bronnen en datums.</p>
         </div>
         <span className="badge">

@@ -39,6 +39,7 @@ import {
   Microsoft365Mailer,
   checkRealRecipients,
 } from './microsoft-mail.js';
+import { WorkbookImports } from './workbook-imports.js';
 import { OutlookSource } from './outlook-source.js';
 import {
   deliver,
@@ -83,6 +84,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
     connectionTimeoutMillis: 3000,
   });
   readonly store = new ReportStore(this.pool);
+  readonly workbooks = new WorkbookImports(this.pool);
   readonly dataDirectory = process.env.COP_DATA_DIR ?? join(homedir(), '.cop');
   auth!: ReturnType<typeof betterAuth>;
   ready = false;
@@ -620,6 +622,29 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         ? 'microsoft365'
         : 'local-test-only',
     );
+  }
+  async workbookDashboard(principal: Principal, dataset: Dataset) {
+    requirePermission(principal, principal.organizationId, 'reports.read');
+    if (!['real', 'demo'].includes(dataset))
+      throw new BadRequestException('Ongeldige dataset.');
+    const org = await this.organization(principal.organizationId);
+    return {
+      organization: scopedOrganization(org, principal),
+      dataset,
+      imports: await this.workbooks.list(principal, dataset),
+    };
+  }
+  async importWorkbook(
+    principal: Principal,
+    body: Parameters<WorkbookImports['import']>[2],
+  ) {
+    requirePermission(principal, principal.organizationId, 'reports.manage');
+    const org = await this.organization(principal.organizationId);
+    try {
+      return await this.workbooks.import(org, principal, body);
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
+    }
   }
   async sourceStatus(principal: Principal) {
     requirePermission(principal, principal.organizationId, 'reports.manage');

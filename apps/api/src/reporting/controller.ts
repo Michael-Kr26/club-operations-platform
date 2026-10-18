@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import type { Dataset, ImportMeta, ReportSettings } from '@cop/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { ReportingService, WEB_ORIGIN } from './service.js';
+import { requirePermission, ReportingService, WEB_ORIGIN } from './service.js';
 
 function headers(req: FastifyRequest) {
   return new Headers(
@@ -208,6 +208,35 @@ export class ReportsController {
   ) {
     await this.access(req, org, true);
     const file = await this.reports.store.original(org, id);
+    if (!file)
+      return reply.status(404).send({ message: 'Import niet gevonden.' });
+    return reply
+      .header('Content-Type', 'application/octet-stream')
+      .header('Content-Disposition', `attachment; filename="${file.filename}"`)
+      .send(file.original);
+  }
+  @Get('workbooks') async workbooks(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Query('dataset') dataset: Dataset = 'real',
+  ) {
+    return this.reports.workbookDashboard(await this.access(req, org), dataset);
+  }
+  @Post('workbooks') async importWorkbook(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Body() body: Parameters<ReportingService['importWorkbook']>[1],
+  ) {
+    return this.reports.importWorkbook(await this.access(req, org, true), body);
+  }
+  @Get('workbooks/:id/original') async workbookOriginal(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Param('id') id: string,
+    @Res() reply: FastifyReply,
+  ) {
+    requirePermission(await this.access(req, org, true), org, 'reports.manage');
+    const file = await this.reports.workbooks.original(org, id);
     if (!file)
       return reply.status(404).send({ message: 'Import niet gevonden.' });
     return reply

@@ -3,6 +3,9 @@ import { mkdtemp, rm, readFile, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Pool } from 'pg';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import { startLocalDatabase } from '../../scripts/local-database.mjs';
 import { ReportStore, sportSociety } from './store.js';
 import { OutlookSource } from './outlook-source.js';
@@ -14,6 +17,29 @@ afterEach(async () => {
     await rm(dir, { recursive: true, force: true });
 });
 describe('Dockerloze lokale database', () => {
+  it('sluit uitgestelde TCP-clientcallbacks af voordat de database dichtgaat en kan dezelfde opslag heropenen', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'cop-client-close-'));
+    directories.push(dir);
+    const script = `import { startLocalDatabase } from './scripts/local-database.mjs'; import {Pool} from 'pg';
+      for(let round=0;round<2;round++){
+        const db=await startLocalDatabase(${JSON.stringify(dir)},{port:0});
+        const pool=new Pool({connectionString:db.connectionString,max:8});
+        await Promise.all(Array.from({length:8},()=>pool.query('SELECT 1')));
+        await pool.end(); await db.close();
+      }
+      console.log('restart-ok');`;
+    const result = await promisify(execFile)(
+      process.execPath,
+      ['--input-type=module', '-e', script],
+      {
+        cwd: fileURLToPath(new URL('../../', import.meta.url)),
+        timeout: 20000,
+      },
+    );
+    expect(result.stdout).toContain('restart-ok');
+    expect(result.stderr).toBe('');
+  }, 25000);
+
   it('bewaart een ophaalpoging en slaat retries, herstart en andere tenant over zodra de actuele import er is', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'cop-outlook-'));
     directories.push(dir);

@@ -45,3 +45,7 @@ Stoppen: Ctrl+C. Gegevens blijven in lokale Docker-volumes en je `.cop`-map. Ver
 ## Healthplanner-ochtendmail
 
 Zie [OUTLOOK-HEALTHPLANNER.md](OUTLOOK-HEALTHPLANNER.md) voor EML-import, bronmailbox en het ritme 08:35 ophalen / 08:45 verzenden.
+
+## Excel-dashboard
+
+Nieuw: [EXCEL-DASHBOARDS.md](EXCEL-DASHBOARDS.md). Upload ondersteunde Dewi- en Healthplanner-bronbestanden via `/rapportages/excel`.

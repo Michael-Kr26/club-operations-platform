@@ -4,3 +4,4 @@ export interface HealthResponse {
   timestamp: string;
 }
 export * from './reports';
+export * from './forecasts';

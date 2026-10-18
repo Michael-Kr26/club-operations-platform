@@ -9,7 +9,7 @@ import type {
 import { dateOnly } from './calculation.js';
 
 type Row = Record<string, unknown>;
-function inspectXlsx(bytes: Buffer) {
+export function inspectXlsx(bytes: Buffer) {
   // Sum the ZIP central-directory sizes before ExcelJS inflates anything. Reject ZIP64 and oversized archives.
   let end = -1;
   for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--)
