@@ -112,6 +112,8 @@ export function ReportsPage() {
       api<{
         initializationError?: string | null;
         localTestMailAvailable?: boolean;
+        localReportAccess?: boolean;
+        localAccessOrganization?: string | null;
         ready: boolean;
         setupRequired: boolean;
         setupTokenFile: string | null;
@@ -261,6 +263,13 @@ export function ReportsPage() {
         )}
         {mailStatus.data?.error}
       </p>
+      {status.data?.localReportAccess &&
+        status.data.localAccessOrganization === org && (
+          <p className="report-notice">
+            Lokale toegang: rapportages en Excel-bestanden zijn op dit apparaat
+            zonder aanmelding beschikbaar.
+          </p>
+        )}
       {message && (
         <p role="status" className="report-notice">
           {message}
@@ -345,48 +354,58 @@ export function ReportsPage() {
           </button>
         </form>
       )}
-      {status.data?.ready && !status.data.setupRequired && !allowed && (
-        <form
-          className="panel report-panel"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void action(
-              () => api('local-auth/sign-in/email', { email, password }),
-              'Aangemeld.',
-            ).then(() => setPassword(''));
-          }}
-        >
-          <h2>Aanmelden bij rapportages</h2>
-          <p>
-            Serverrechten bepalen toegang; de voorbeeldrol in de navigatie
-            verleent geen toegang.
-          </p>
-          <label>
-            E-mail
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
-              required
-            />
-          </label>
-          <label>
-            Wachtwoord
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </label>
-          <button disabled={busy} className="button button--primary">
-            Aanmelden
-          </button>
-          <p>{access.error?.message}</p>
-        </form>
-      )}
+      {status.data?.ready &&
+        !status.data.setupRequired &&
+        !allowed &&
+        !access.isPending &&
+        !(
+          status.data.localReportAccess &&
+          status.data.localAccessOrganization === org
+        ) && (
+          <form
+            className="panel report-panel"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void action(
+                () => api('local-auth/sign-in/email', { email, password }),
+                'Aangemeld.',
+              ).then(() => setPassword(''));
+            }}
+          >
+            <h2>Aanmelden bij rapportages</h2>
+            <p>
+              Serverrechten bepalen toegang; de voorbeeldrol in de navigatie
+              verleent geen toegang.
+            </p>
+            <label>
+              E-mail
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                required
+              />
+            </label>
+            <label>
+              Wachtwoord
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </label>
+            <button disabled={busy} className="button button--primary">
+              Aanmelden
+            </button>
+            <p>{access.error?.message}</p>
+          </form>
+        )}
+      {status.data?.localReportAccess &&
+        status.data.localAccessOrganization === org &&
+        access.error && <p role="alert">{access.error.message}</p>}
       {allowed && (
         <>
           <div className="page-toolbar">
@@ -418,20 +437,25 @@ export function ReportsPage() {
                 onChange={(e) => setDate(e.target.value)}
               />
             </label>
-            <button
-              className="button"
-              onClick={() =>
-                void action(async () => {
-                  await api('local-auth/sign-out', {});
-                  client.removeQueries({
-                    predicate: (q) =>
-                      String(q.queryKey[0]).startsWith('reports'),
-                  });
-                }, 'Afgemeld.')
-              }
-            >
-              Afmelden
-            </button>
+            {!(
+              status.data?.localReportAccess &&
+              status.data.localAccessOrganization === org
+            ) && (
+              <button
+                className="button"
+                onClick={() =>
+                  void action(async () => {
+                    await api('local-auth/sign-out', {});
+                    client.removeQueries({
+                      predicate: (q) =>
+                        String(q.queryKey[0]).startsWith('reports'),
+                    });
+                  }, 'Afgemeld.')
+                }
+              >
+                Afmelden
+              </button>
+            )}
             {dataset === 'demo' && manage && (
               <button
                 className="button"

@@ -2,7 +2,7 @@
 
 ## Zonder Docker (aanbevolen bij WSL-problemen)
 
-Zie [de korte startinstructie](ZONDER-DOCKER.md). Met `pnpm.cmd dev:local` starten website, backend, database en migraties samen.
+Zie [de korte startinstructie](ZONDER-DOCKER.md). Met `pnpm.cmd dev:local` starten website, backend, database en migraties samen. Rapportages en het Excel-dashboard openen daarbij tijdelijk zonder aanmelding voor de lokale Sport Society-eigenaar. De accountstappen hieronder gelden voor de gewone/Docker-start of wanneer lokale toegang expliciet uitstaat.
 
 ## Met Docker: ophalen en starten (PowerShell)
 

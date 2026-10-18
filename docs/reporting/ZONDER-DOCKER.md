@@ -14,6 +14,21 @@ Dit bouwt de gedeelde pakketten en API, start de lokale database, voert migratie
 
 ## Eerste gebruik
 
+Bij `pnpm.cmd dev:local` openen Rapportages en het Excel-dashboard standaard **zonder aanmelding** voor de lokale eigenaar van het apparaat, alleen voor Sport Society. Uploads en instellingen zijn direct beschikbaar. Dit is een tijdelijke ontwikkelkeuze voor één gebruiker op localhost; geen toegangsmodel voor meerdere gebruikers of commerciële hosting.
+
+De API staat alleen deze toegang toe als `COP_LOCAL_REPORT_ACCESS=1`, `COP_STORAGE_MODE=pglite-local`, `HOST=127.0.0.1` en NODE_ENV niet production is. De gewone API/Docker-start behoudt de bestaande sessies en rechten. Andere organisaties vallen niet onder deze lokale uitzondering. Een eventueel lokaal ingesteld COP_LOCAL_REPORT_ORGANIZATION kan uitsluitend door de serverconfiguratie naar een andere bestaande organisatie verwijzen. Verzendcontroles en bronvalidatie veranderen niet.
+
+### Aanmelden weer verplicht maken
+
+Stop COP en start in PowerShell:
+
+```powershell
+$env:COP_LOCAL_REPORT_ACCESS = '0'
+pnpm.cmd dev:local
+```
+
+Daarna gelden de onderstaande accountstappen weer. Bestaande accounts en gegevens zijn behouden.
+
 Lees in een tweede terminal de eenmalige installatiecode:
 
 ```powershell

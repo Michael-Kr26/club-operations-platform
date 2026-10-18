@@ -558,6 +558,12 @@ export function WorkbookDashboard() {
           Ochtendrapport & churn
         </Link>
       </section>
+      {access.data?.userId === 'local-device-owner' && (
+        <p className="report-notice">
+          Lokale toegang op dit apparaat: geen aanmelding nodig voor dit
+          dashboard.
+        </p>
+      )}
       {access.isPending && <p role="status">Toegang controleren…</p>}
       {access.error && (
         <p className="report-notice" role="alert">

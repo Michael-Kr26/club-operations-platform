@@ -39,6 +39,7 @@ import {
   Microsoft365Mailer,
   checkRealRecipients,
 } from './microsoft-mail.js';
+import { localReportAccess } from './local-access.js';
 import { WorkbookImports } from './workbook-imports.js';
 import { OutlookSource } from './outlook-source.js';
 import {
@@ -169,9 +170,13 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
   status() {
     return {
       ready: this.ready,
-      setupRequired: this.ready && !!this.setupToken,
+      localReportAccess: this.ready && !!localReportAccess(),
+      localAccessOrganization: this.ready
+        ? (localReportAccess()?.organizationId ?? null)
+        : null,
+      setupRequired: this.ready && !!this.setupToken && !localReportAccess(),
       setupTokenFile:
-        this.ready && this.setupToken
+        this.ready && this.setupToken && !localReportAccess()
           ? join(this.dataDirectory, 'setup-token')
           : null,
       initializationError: this.initializationError,
@@ -251,6 +256,20 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
   }
   async principal(headers: Headers, org: string, permission: Permission) {
     this.ensureReady();
+    const local = localReportAccess();
+    if (local && org === local.organizationId) {
+      await this.organization(org);
+      return requirePermission(
+        {
+          userId: 'local-device-owner',
+          organizationId: org,
+          permissions: ['reports.read', 'reports.manage'],
+          locations: null,
+        },
+        org,
+        permission,
+      );
+    }
     const session = await this.auth.api.getSession({ headers });
     if (!session)
       throw new UnauthorizedException('Meld je aan voor de rapportagemodule.');

@@ -6,7 +6,7 @@ Open **http://localhost:5173/rapportages/excel**. Ook bereikbaar via **Rapportag
 
 ## Gebruik
 
-1. Log zo nodig in op `/rapportages`; de gebruikersnaam/rol van de prototypezijbalk geeft geen API-toegang.
+1. Bij `pnpm.cmd dev:local` opent het dashboard tijdelijk direct voor de lokale Sport Society-eigenaar. Bij de gewone API/Docker-start log je in op `/rapportages`; de voorbeeldrol in de zijbalk verleent geen API-toegang.
 2. Kies werkelijke gegevens of de afzonderlijke DEMO-dataset.
 3. Upload één ondersteund bronbestand (maximaal 5 MB). De inhoud bepaalt het formaat.
 4. Bij een ledenexport of omzetrapport: kies de juiste club en bevestig die toewijzing. Bij een ledenexport ook de werkelijke peildatum invullen. COP raadt geen club uit woonadressen, bestandsnaam, e-mailontvanger of telefoonnummers.
@@ -57,7 +57,7 @@ De bestaande `.eml`-parser is ook beschikbaar via dit dashboard. Exacte afzender
 
 ## Toegang en controle
 
-Alle API-routes staan onder `/api/v1/organizations/:organizationId/reports/workbooks`. Bestaande serverzijdige sessies en `reports.read` / `reports.manage` gelden. Uploaden en origineel downloaden vereisen organisatiebrede beheerrechten. Een locatiemanager ziet uitsluitend eigen bronrecords; bij organisatiebrede HP-bestanden worden andere clubs en eventuele globale kaarten verwijderd. Werkelijke en demo-datasets blijven gescheiden; gegevens worden altijd met tenantvoorwaarde gelezen.
+Alle API-routes staan onder `/api/v1/organizations/:organizationId/reports/workbooks`. Buiten de expliciete lokale eengebruikersmodus gelden bestaande serverzijdige sessies en `reports.read` / `reports.manage`. Zie [ZONDER-DOCKER.md](ZONDER-DOCKER.md) voor deze tijdelijke lokale eigenaarstoegang en het herstellen van verplichte aanmelding. Uploaden en origineel downloaden vereisen organisatiebrede beheerrechten. Een locatiemanager ziet uitsluitend eigen bronrecords; bij organisatiebrede HP-bestanden worden andere clubs en eventuele globale kaarten verwijderd. Werkelijke en demo-datasets blijven gescheiden; gegevens worden altijd met tenantvoorwaarde gelezen.
 
 Validatie omvat o.a. bestandsgrootte/uitgepakte XLSX-grootte, verwachte kopregels, aaneengesloten maanden, niet-negatieve gehele aantallen, formulevorm, bronorganisatie, financiële aansluiting en dubbele klantnummers. Onbekende formaten worden met uitleg afgewezen en niet stilzwijgend aan een willekeurige bron gekoppeld.
 

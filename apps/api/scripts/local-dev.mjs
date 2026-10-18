@@ -88,6 +88,7 @@ try {
     DATABASE_URL: database.connectionString,
     COP_DATA_DIR: directory,
     COP_STORAGE_MODE: 'pglite-local',
+    COP_LOCAL_REPORT_ACCESS: process.env.COP_LOCAL_REPORT_ACCESS ?? '1',
     PORT: '3000',
     HOST: '127.0.0.1',
     API_URL: 'http://localhost:3000',
@@ -110,9 +111,15 @@ try {
     console.log(
       `Gegevens blijven opgeslagen in: ${join(directory, 'postgres-local')}`,
     );
-    console.log(
-      'Eerste account: lees de installatiecode in een tweede terminal met Get-Content "$env:USERPROFILE\\.cop\\setup-token".',
-    );
+    if (env.COP_LOCAL_REPORT_ACCESS === '1' && env.NODE_ENV !== 'production') {
+      console.log(
+        'Rapportages en Excel-dashboard openen lokaal zonder aanmelding.',
+      );
+    } else {
+      console.log(
+        'Eerste account: lees de installatiecode in een tweede terminal met Get-Content "$env:USERPROFILE\\.cop\\setup-token".',
+      );
+    }
     console.log(
       'Ctrl+C stopt de website en database. Lokale SMTP-opvang vereist apart Mailpit; mailvoorbeelden werken zonder Mailpit.',
     );
