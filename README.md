@@ -8,6 +8,8 @@ COP bevat de bestaande paginaopzet en een eerste lokale managementrapportagemodu
 
 ## Beoogde stack
 
+Er is ook een [lokale operationele werkruimte](docs/operations/README.md): locatiecijfers, Dewi-leden met contacthistorie, taken, een opgeslagen rooster voor vijf locaties en terugkerende controles/apparaatonderhoud. De handleiding beschrijft rechten, definities en de grenzen van deze eerste versie.
+
 - pnpm workspace monorepo
 - React, TypeScript en Vite voor `apps/web`
 - NestJS met Fastify voor `apps/api`
@@ -61,4 +63,4 @@ Alle lokale kwaliteitscontroles draaien met:
 pnpm verify
 ```
 
-Functionele modules volgen pas nadat authenticatie, tenantcontext en autorisatie betrouwbaar zijn ingericht.
+Serverrechten en locatie-/tenantcontext gelden ook voor de operationele modules. De mockrol in de navigatie bepaalt geen serverrechten.

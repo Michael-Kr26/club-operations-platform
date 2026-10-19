@@ -1,6 +1,11 @@
 export type Dataset = 'real' | 'demo';
 export type Source = 'dewi-members' | 'dewi-finance' | 'healthplanner';
-export type Permission = 'reports.read' | 'reports.manage';
+export type Permission =
+  | 'reports.read'
+  | 'reports.manage'
+  | 'operations.read'
+  | 'operations.manage'
+  | 'members.read';
 export interface ReportOrganization {
   id: string;
   name: string;

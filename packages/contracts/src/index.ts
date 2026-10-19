@@ -5,3 +5,4 @@ export interface HealthResponse {
 }
 export * from './reports';
 export * from './forecasts';
+export * from './operations';

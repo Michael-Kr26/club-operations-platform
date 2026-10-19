@@ -6,9 +6,15 @@ import {
   ReportsController,
 } from './reporting/controller.js';
 import { ReportingService } from './reporting/service.js';
+import { OperationsController } from './operations/controller.js';
 
 @Module({
-  controllers: [HealthController, LocalAuthController, ReportsController],
+  controllers: [
+    HealthController,
+    LocalAuthController,
+    ReportsController,
+    OperationsController,
+  ],
   providers: [ReportingService],
 })
 export class AppModule {}

@@ -10,6 +10,7 @@ import {
   timestamp,
   uniqueIndex,
   boolean,
+  integer,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -217,5 +218,42 @@ export const workbookPreferences = pgTable(
   (t) => [
     primaryKey({ columns: [t.organizationId, t.dataset] }),
     check('workbook_preferences_dataset', sql`${t.dataset} IN ('real','demo')`),
+  ],
+);
+export const operationRecords = pgTable(
+  'operation_records',
+  {
+    id: text('id').primaryKey(),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => reportOrganizations.id),
+    dataset: text('dataset').notNull(),
+    locationId: text('location_id').notNull(),
+    kind: text('kind').notNull(),
+    data: jsonb('data').notNull(),
+    sourceKey: text('source_key'),
+    version: integer('version').notNull().default(1),
+    createdAt: time('created_at'),
+    updatedAt: time('updated_at'),
+    updatedBy: text('updated_by').notNull(),
+  },
+  (t) => [
+    index('operation_scope').on(
+      t.organizationId,
+      t.dataset,
+      t.locationId,
+      t.kind,
+    ),
+    uniqueIndex('operation_source_unique').on(
+      t.organizationId,
+      t.dataset,
+      t.kind,
+      t.sourceKey,
+    ),
+    check('operation_dataset', sql`${t.dataset} IN ('real','demo')`),
+    check(
+      'operation_kind',
+      sql`${t.kind} IN ('task','employee','shift','checklist','asset','contact')`,
+    ),
   ],
 );

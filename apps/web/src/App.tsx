@@ -6,16 +6,11 @@ import { useState } from 'react';
 import {
   OrganizationsPage,
   OrganizationOverviewPage,
-  MembersPage,
-  TeamPage,
-  PlanningTemplatePage,
-  TasksPage,
-  LocationsPage,
-  LocationDetailPage,
   SettingsPage,
   NotFoundPage,
 } from './pages/ModulePages';
 import { WorkbookDashboard } from './reports/WorkbookDashboard';
+import { OperationsPage } from './operations/OperationsPage';
 import { ReportsPage } from './reports/ReportsPage';
 import { useQuery } from '@tanstack/react-query';
 import type { HealthResponse } from '@cop/contracts';
@@ -141,6 +136,7 @@ const primaryNavigation: Array<{
   { icon: 'team', label: 'Team', to: '/team' },
   { icon: 'calendar', label: 'Planning', to: '/planning' },
   { icon: 'clipboard', label: 'Taken', to: '/taken' },
+  { icon: 'clipboard', label: 'Controles', to: '/controles' },
 ];
 
 const managementNavigation: Array<{
@@ -354,27 +350,27 @@ export function App() {
             />
             <Route
               path="/organisaties/:organizationSlug/leden"
-              element={<MembersPage />}
+              element={<OperationsPage mode="members" />}
             />
             <Route
               path="/organisaties/:organizationSlug/team"
-              element={<TeamPage />}
+              element={<OperationsPage mode="team" />}
             />
             <Route
               path="/organisaties/:organizationSlug/planning"
-              element={<PlanningTemplatePage />}
+              element={<OperationsPage mode="planning" />}
             />
             <Route
               path="/organisaties/:organizationSlug/taken"
-              element={<TasksPage />}
+              element={<OperationsPage mode="tasks" />}
             />
             <Route
               path="/organisaties/:organizationSlug/locaties"
-              element={<LocationsPage />}
+              element={<OperationsPage mode="locations" />}
             />
             <Route
               path="/organisaties/:organizationSlug/locaties/:slug"
-              element={<LocationDetailPage />}
+              element={<OperationsPage mode="location" />}
             />
             <Route
               path="/organisaties/:organizationSlug/rapportages"
@@ -528,12 +524,29 @@ export function App() {
                 </>
               }
             />
-            <Route path="/leden" element={<MembersPage />} />
-            <Route path="/team" element={<TeamPage />} />
-            <Route path="/planning" element={<PlanningTemplatePage />} />
-            <Route path="/taken" element={<TasksPage />} />
-            <Route path="/locaties" element={<LocationsPage />} />
-            <Route path="/locaties/:slug" element={<LocationDetailPage />} />
+            <Route path="/leden" element={<OperationsPage mode="members" />} />
+            <Route path="/team" element={<OperationsPage mode="team" />} />
+            <Route
+              path="/planning"
+              element={<OperationsPage mode="planning" />}
+            />
+            <Route path="/taken" element={<OperationsPage mode="tasks" />} />
+            <Route
+              path="/locaties"
+              element={<OperationsPage mode="locations" />}
+            />
+            <Route
+              path="/locaties/:slug"
+              element={<OperationsPage mode="location" />}
+            />
+            <Route
+              path="/controles"
+              element={<OperationsPage mode="checks" />}
+            />
+            <Route
+              path="/organisaties/:organizationSlug/controles"
+              element={<OperationsPage mode="checks" />}
+            />
             <Route path="/rapportages/excel" element={<WorkbookDashboard />} />
             <Route
               path="/organisaties/:organizationSlug/rapportages/excel"

@@ -43,6 +43,7 @@ import { localReportAccess } from './local-access.js';
 import { workbookOverview } from './workbook-overview.js';
 import { WorkbookImports } from './workbook-imports.js';
 import { WorkbookInbox } from './workbook-inbox.js';
+import { OperationsStore } from '../operations/store.js';
 import { OutlookSource } from './outlook-source.js';
 import {
   deliver,
@@ -88,6 +89,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
   });
   readonly store = new ReportStore(this.pool);
   readonly workbooks = new WorkbookImports(this.pool);
+  readonly operations = new OperationsStore(this.pool);
   readonly dataDirectory = process.env.COP_DATA_DIR ?? join(homedir(), '.cop');
   readonly workbookInbox = new WorkbookInbox(
     this.dataDirectory,
@@ -243,7 +245,13 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         [
           result.user.id,
           sportSociety.id,
-          JSON.stringify(['reports.read', 'reports.manage']),
+          JSON.stringify([
+            'reports.read',
+            'reports.manage',
+            'operations.read',
+            'operations.manage',
+            'members.read',
+          ]),
         ],
       );
       this.setupToken = '';
@@ -269,7 +277,13 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         {
           userId: 'local-device-owner',
           organizationId: org,
-          permissions: ['reports.read', 'reports.manage'],
+          permissions: [
+            'reports.read',
+            'reports.manage',
+            'operations.read',
+            'operations.manage',
+            'members.read',
+          ],
           locations: null,
         },
         org,
@@ -879,6 +893,17 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
           await this.workbookInbox.scan(org, 'real', now);
           await this.workbookInbox.scan(org, 'demo', now);
         }
+      for (const r of rows) {
+        const org = await this.organization(r.organization_id);
+        const principal: Principal = {
+          userId: 'local-scheduler',
+          organizationId: org.id,
+          locations: null,
+          permissions: ['operations.read', 'operations.manage'],
+        };
+        await this.operations.generateChecklists(org, principal, 'real');
+        await this.operations.generateChecklists(org, principal, 'demo');
+      }
       this.lastTick = now.toISOString();
       this.schedulerError = null;
     } catch {
