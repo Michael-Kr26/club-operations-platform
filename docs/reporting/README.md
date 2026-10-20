@@ -1,5 +1,7 @@
 # Managementrapportages lokaal gebruiken
 
+Het [vastgestelde ontwerp voor de ochtendmail en het grafische COP-overzicht](ONTWERP-OCHTENDMAIL.md) legt de op 20 oktober 2026 gekozen stijl en verdere implementatie vast: blauw als basis, oranje aandachtspunten, seriftypografie en omzet uitsluitend in de weekrapportage. Dit ontwerp is nog niet in de huidige mailtemplate verwerkt.
+
 Deze eerste versie draait in COP op localhost. Geen betaalde dienst of AI/API-credits nodig. Bewaren gebeurt in je lokale PostgreSQL-volume; mailopvang in het lokale Mailpit-volume. Dit is een **lokale import- en rapportageversie**, zonder live leverancierskoppelingen. Echte Microsoft 365-verzending is optioneel beschikbaar: [OAuth en mailboxrechten instellen](MICROSOFT365.md). Zonder die configuratie blijft mail uitsluitend lokaal.
 
 ## Starten op je werklaptop
