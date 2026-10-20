@@ -1,14 +1,7 @@
 import nodemailer from 'nodemailer';
+import { designedMail, type MailDesignContext } from './mail-design.js';
 import type { MailPreview, ManagementReport, Metrics } from '@cop/contracts';
 
-const escape = (s: string) =>
-  s.replace(
-    /[&<>"']/g,
-    (c) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
-        c
-      ]!,
-  );
 export const metricLabels: Partial<Record<keyof Metrics, string>> = {
   active: 'Actieve leden (Dewi)',
   opening: 'Leden aan maandbegin',
@@ -52,49 +45,9 @@ export function previewMail(
   report: ManagementReport,
   recipients: string[],
   delivery: MailPreview['delivery'] = 'local-test-only',
+  context: MailDesignContext = {},
 ): MailPreview {
-  const subject = `${report.dataset === 'demo' ? '[DEMO] ' : ''}${report.provisional ? '[VOORSTEL] ' : ''}${report.organization.name} · ${report.kind === 'monthly' ? 'Maandrapport & churn' : 'Ochtendrapport'} · ${report.from} t/m ${report.through}`;
-  const cols = [
-    ...report.clubs.map((c) => ({ name: c.name, metrics: c.metrics })),
-    { name: 'Organisatietotaal', metrics: report.total },
-  ];
-  const rows = Object.entries(metricLabels)
-    .filter(
-      ([key]) =>
-        report.kind === 'monthly' || !['opening', 'churn'].includes(key),
-    )
-    .map(([key, label]) => ({
-      label,
-      values: cols.map((c) =>
-        formatMetric(key as keyof Metrics, c.metrics[key as keyof Metrics]),
-      ),
-    }));
-  const attention = report.clubs
-    .filter(
-      (c) =>
-        (c.metrics.failedDebits ?? 0) > 0 || (c.metrics.outstanding ?? 0) > 0,
-    )
-    .map((c) => `${c.name}: incasso/openstaand controleren.`);
-  const notes = [
-    ...report.warnings,
-    ...attention,
-    'Uitstroom: effectieve einddatum; churn: uitstroom / actieve leden bij aanvang van de maand.',
-    delivery === 'local-test-only'
-      ? 'Alleen lokale testmailopvang. Er wordt geen internetmail verstuurd.'
-      : 'Verzending via Microsoft 365; SMTP-acceptatie bevestigt geen aflevering in de inbox.',
-  ];
-  return {
-    subject,
-    recipients,
-    delivery,
-    text: [
-      subject,
-      cols.map((c) => c.name).join(' | '),
-      ...rows.map((r) => `${r.label}: ${r.values.join(' | ')}`),
-      ...notes,
-    ].join('\n'),
-    html: `<!doctype html><html lang="nl"><meta charset="utf-8"><body style="font-family:Arial,sans-serif;color:#172840"><h1>${escape(subject)}</h1><p>Korte vergelijking van clubs · bedrag in euro · onbekend betekent ontbrekende gegevens.</p><table cellpadding="8" border="1" style="border-collapse:collapse"><thead><tr><th>Cijfer</th>${cols.map((c) => `<th>${escape(c.name)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr><th>${escape(r.label)}</th>${r.values.map((v) => `<td>${escape(v)}</td>`).join('')}</tr>`).join('')}</tbody></table><ul>${notes.map((n) => `<li>${escape(n)}</li>`).join('')}</ul></body></html>`,
-  };
+  return designedMail(report, recipients, delivery, formatMetric, context);
 }
 export interface TestMailer {
   readonly delivery?: MailPreview['delivery'];

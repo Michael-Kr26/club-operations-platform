@@ -1,6 +1,6 @@
 # Vastgesteld ontwerp: ochtendmail en COP-overzicht
 
-Status: ontwerprichting goedgekeurd door Michael op 20 oktober 2026. Deze vastlegging wijzigt nog geen schermen, mailtemplates, verzendinstellingen of bedrijfsdefinities.
+Status: ontwerprichting goedgekeurd door Michael op 20 oktober 2026. De HTML-mail en grafieken zijn inmiddels uitgewerkt; zie de [implementatiehandleiding](MAIL-EN-GRAFIEKEN.md). Ontwerpgoedkeuring wijzigt geen verzendinstellingen of bedrijfsdefinities.
 
 ## Visuele keuze
 

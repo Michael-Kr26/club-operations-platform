@@ -32,7 +32,12 @@ function headers(req: FastifyRequest) {
     Object.entries(req.headers).flatMap(([key, value]) =>
       value === undefined
         ? []
-        : [[key, Array.isArray(value) ? value.join(',') : value]],
+        : [
+            [key, Array.isArray(value) ? value.join(',') : value] as [
+              string,
+              string,
+            ],
+          ],
     ),
   );
 }

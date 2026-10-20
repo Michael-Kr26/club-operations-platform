@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   Dataset,
@@ -10,6 +10,7 @@ import type {
   WorkbookSupplement,
 } from '@cop/contracts';
 import { WorkbookOverview } from './WorkbookOverview';
+import { ReportCharts } from './ReportCharts';
 import { WorkbookUpload } from './WorkbookUpload';
 import { WorkbookSettings } from './WorkbookSettings';
 import './reports.css';
@@ -512,6 +513,7 @@ export function SupplementView({
   );
 }
 export function WorkbookDashboard() {
+  const [params] = useSearchParams();
   const { organizationSlug } = useParams();
   const org = organizationSlug ?? 'sport-society';
   const base = `organizations/${encodeURIComponent(org)}/reports`;
@@ -519,7 +521,9 @@ export function WorkbookDashboard() {
     ? `/organisaties/${encodeURIComponent(org)}/rapportages`
     : '/rapportages';
   const client = useQueryClient();
-  const [dataset, setDataset] = useState<Dataset>('real'),
+  const [dataset, setDataset] = useState<Dataset>(
+      params.get('dataset') === 'demo' ? 'demo' : 'real',
+    ),
     [selected, setSelected] = useState(''),
     [detail, setDetail] = useState(false);
   const access = useQuery({
@@ -544,7 +548,7 @@ export function WorkbookDashboard() {
   const item = accepted.find((i) => i.id === selected) ?? accepted[0];
   const report = item?.report;
   return (
-    <div className="cop-reports workbook-dashboard">
+    <div className="cop-reports workbook-dashboard management-design">
       <section className="page-heading">
         <div>
           <span className="page-heading__eyebrow">Rapportages · bestanden</span>
@@ -554,7 +558,7 @@ export function WorkbookDashboard() {
             en locatie.
           </p>
         </div>
-        <Link className="button" to={home}>
+        <Link className="button" to={`${home}?dataset=${dataset}`}>
           Ochtendrapport & churn
         </Link>
       </section>
@@ -578,6 +582,7 @@ export function WorkbookDashboard() {
       )}
       {access.data && !access.error && (
         <>
+          {data.data && <ReportCharts data={data.data} />}
           {data.data && (
             <WorkbookOverview
               data={data.data}

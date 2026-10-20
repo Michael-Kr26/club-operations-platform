@@ -27,9 +27,17 @@ export function shiftDate(date: string, days: number): string {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
-export function reportPeriod(kind: 'daily' | 'monthly', date: string) {
+export function reportPeriod(
+  kind: 'daily' | 'weekly' | 'monthly',
+  date: string,
+) {
   dateOnly(date);
   if (kind === 'daily') return { from: date, through: date };
+  if (kind === 'weekly') {
+    const weekday = new Date(date).getUTCDay() || 7;
+    const from = shiftDate(date, 1 - weekday);
+    return { from, through: shiftDate(from, 6) };
+  }
   const from = `${date.slice(0, 7)}-01`;
   const next = new Date(from);
   next.setUTCMonth(next.getUTCMonth() + 1);
@@ -224,7 +232,7 @@ export function calculateReport(
   organization: ReportOrganization,
   imports: StoredImport[],
   dataset: 'real' | 'demo',
-  kind: 'daily' | 'monthly',
+  kind: 'daily' | 'weekly' | 'monthly',
   date: string,
   settings: ReportSettings,
   now = new Date(),

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { REPORT_RULES, REPORT_RULES_VERSION } from '@cop/contracts';
 import type {
@@ -14,7 +14,9 @@ import type {
   Source,
 } from '@cop/contracts';
 import './reports.css';
+import './management-design.css';
 import { previousAmsterdamDate } from './dates';
+import { blocksRealSend } from './mail-readiness';
 
 async function api<T>(
   path: string,
@@ -86,13 +88,26 @@ const timestamp = (s: string | null) =>
 const yesterday = previousAmsterdamDate;
 
 export function ReportsPage() {
+  const [params] = useSearchParams();
   const { organizationSlug } = useParams();
   const org = organizationSlug ?? 'sport-society';
   const base = `organizations/${encodeURIComponent(org)}/reports`;
   const client = useQueryClient();
-  const [dataset, setDataset] = useState<Dataset>('real'),
-    [kind, setKind] = useState<'daily' | 'monthly'>('daily'),
-    [date, setDate] = useState(yesterday);
+  const [dataset, setDataset] = useState<Dataset>(
+      params.get('dataset') === 'demo' ? 'demo' : 'real',
+    ),
+    [kind, setKind] = useState<'daily' | 'weekly' | 'monthly'>(
+      params.get('kind') === 'weekly'
+        ? 'weekly'
+        : params.get('kind') === 'monthly'
+          ? 'monthly'
+          : 'daily',
+    ),
+    [date, setDate] = useState(() =>
+      /^\d{4}-\d{2}-\d{2}$/.test(params.get('date') ?? '')
+        ? params.get('date')!
+        : yesterday(),
+    );
   const [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
     [email, setEmail] = useState(''),
@@ -227,7 +242,7 @@ export function ReportsPage() {
     if (current) setEditing({ ...current, ...values });
   };
   return (
-    <div className="cop-reports">
+    <div className="cop-reports management-design">
       <section className="page-heading">
         <div>
           <span className="page-heading__eyebrow">Management · {org}</span>
@@ -423,9 +438,12 @@ export function ReportsPage() {
               Rapport
               <select
                 value={kind}
-                onChange={(e) => setKind(e.target.value as 'daily' | 'monthly')}
+                onChange={(e) =>
+                  setKind(e.target.value as 'daily' | 'weekly' | 'monthly')
+                }
               >
                 <option value="daily">Dagelijks</option>
+                <option value="weekly">Wekelijks · omzet</option>
                 <option value="monthly">Maandelijks & churn</option>
               </select>
             </label>
@@ -519,10 +537,17 @@ export function ReportsPage() {
                     </thead>
                     <tbody>
                       {Object.entries(labels)
-                        .filter(
-                          ([key]) =>
-                            kind === 'monthly' ||
-                            !['opening', 'churn'].includes(key),
+                        .filter(([key]) =>
+                          kind === 'weekly'
+                            ? [
+                                'revenue',
+                                'received',
+                                'outstanding',
+                                'failedDebits',
+                              ].includes(key)
+                            : key !== 'revenue' &&
+                              (kind === 'monthly' ||
+                                !['opening', 'churn'].includes(key)),
                         )
                         .map(([key, label]) => (
                           <tr key={key}>
@@ -643,10 +668,7 @@ export function ReportsPage() {
                   busy ||
                   dataset !== 'real' ||
                   !preview.data ||
-                  !report.data ||
-                  report.data.provisional ||
-                  (!!report.data.warnings.length &&
-                    !(kind === 'daily' && settings.data?.allowPartialDaily))
+                  blocksRealSend(report.data, settings.data?.allowPartialDaily)
                 }
                 onClick={() =>
                   void action(async () => {
@@ -723,6 +745,17 @@ export function ReportsPage() {
                   >
                     <div className="report-fields">
                       <label>
+                        Aanhefnaam (optioneel)
+                        <input
+                          maxLength={80}
+                          placeholder="Bijvoorbeeld Chico"
+                          value={current.greetingName ?? ''}
+                          onChange={(e) =>
+                            patch({ greetingName: e.target.value })
+                          }
+                        />
+                      </label>
+                      <label>
                         Ontvangers (komma’s)
                         <input
                           value={current.recipients.join(', ')}
@@ -748,7 +781,42 @@ export function ReportsPage() {
                         Tijdzone
                         <input value="Europe/Amsterdam" readOnly />
                       </label>
+                      <label>
+                        Weekrapport op
+                        <select
+                          value={current.weeklyDay ?? ''}
+                          onChange={(e) =>
+                            patch({
+                              weeklyDay:
+                                e.target.value === ''
+                                  ? null
+                                  : Number(e.target.value),
+                            })
+                          }
+                        >
+                          <option value="">Uit · nog geen dag gekozen</option>
+                          {[
+                            'Zondag',
+                            'Maandag',
+                            'Dinsdag',
+                            'Woensdag',
+                            'Donderdag',
+                            'Vrijdag',
+                            'Zaterdag',
+                          ].map((day, i) => (
+                            <option key={day} value={i}>
+                              {day}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                     </div>
+                    <p>
+                      Het weekrapport bevat omzet van de vorige volledige
+                      kalenderweek (maandag–zondag), op de gekozen dag om{' '}
+                      {current.time}. Het volgt de algemene planningsschakelaar
+                      hieronder. Een maandexport wordt niet over weken verdeeld.
+                    </p>
                     <label className="report-check">
                       <input
                         type="checkbox"

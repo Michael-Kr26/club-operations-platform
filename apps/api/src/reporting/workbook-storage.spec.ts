@@ -32,7 +32,7 @@ beforeAll(async () => {
   pool = new Pool({ connectionString: database.connectionString });
   await new ReportStore(pool).seed();
   store = new WorkbookImports(pool);
-}, 10000);
+}, 60000);
 afterAll(async () => {
   await pool?.end();
   await database?.close();

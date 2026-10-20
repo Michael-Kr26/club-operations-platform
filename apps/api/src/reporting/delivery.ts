@@ -3,6 +3,8 @@ import type { TestMailer } from './mail.js';
 import { previewMail } from './mail.js';
 import type { ReportStore } from './store.js';
 import { localClock, shiftDate } from './calculation.js';
+import { reportPeriod } from './calculation.js';
+import type { MailDesignContext } from './mail-design.js';
 
 export async function deliver(
   store: ReportStore,
@@ -11,6 +13,7 @@ export async function deliver(
   report: ManagementReport,
   settings: ReportSettings,
   actor: string,
+  context: MailDesignContext = {},
 ) {
   const id = await store.claim(
     organizationId,
@@ -20,7 +23,10 @@ export async function deliver(
     actor,
   );
   if (!id) return { duplicate: true };
-  const preview = previewMail(report, settings.recipients, mailer.delivery);
+  const preview = previewMail(report, settings.recipients, mailer.delivery, {
+    ...context,
+    greetingName: settings.greetingName ?? '',
+  });
   await store.attachPreview(organizationId, id, preview);
   // Manual test capture may include unknown/provisional values, but scheduler explicitly blocks these.
   try {
@@ -42,6 +48,7 @@ export async function deliver(
 export function dueRuns(
   now: Date,
   time: string,
+  weeklyDay: number | null = null,
 ): { kind: SendRun['kind']; date: string; missed: boolean }[] {
   const clock = localClock(now);
   const minutes = (value: string) =>
@@ -49,6 +56,17 @@ export function dueRuns(
   const late = minutes(clock.time) - minutes(time) > 5;
   const todayRun = shiftDate(clock.date, -1);
   const due: { kind: SendRun['kind']; date: string; missed: boolean }[] = [];
+  if (weeklyDay !== null) {
+    const day = new Date(clock.date).getUTCDay();
+    const since = (day - weeklyDay + 7) % 7;
+    let scheduled = shiftDate(clock.date, -since);
+    if (since === 0 && clock.time < time) scheduled = shiftDate(scheduled, -7);
+    due.push({
+      kind: 'weekly',
+      date: shiftDate(reportPeriod('weekly', scheduled).from, -1),
+      missed: scheduled !== clock.date || late,
+    });
+  }
   // A single previous run is recorded as missed on startup; older gaps are represented by the interval notice in the guide/UI.
   due.push({ kind: 'daily', date: shiftDate(clock.date, -2), missed: true });
   if (clock.time >= time)
@@ -69,6 +87,21 @@ export function canDeliverReport(
   settings: ReportSettings,
 ) {
   if (report.provisional || !settings.recipients.length) return false;
+  if (report.kind === 'weekly')
+    return (
+      report.through < localClock(new Date(report.generatedAt)).date &&
+      report.clubs.length > 0 &&
+      report.clubs.every(
+        (c) =>
+          c.metrics.revenue !== null &&
+          report.sources.some(
+            (s) =>
+              s.locationId === c.id &&
+              s.source === 'dewi-finance' &&
+              s.status === 'ready',
+          ),
+      )
+    );
   if (
     !report.warnings.length &&
     report.sources.every((s) => s.status === 'ready')
@@ -114,6 +147,7 @@ export async function scheduledRun(
   run: ReturnType<typeof dueRuns>[number],
   report: ManagementReport,
   settings: ReportSettings,
+  context: MailDesignContext = {},
 ) {
   if (run.missed)
     return store.claim(
@@ -135,5 +169,5 @@ export async function scheduledRun(
       'blocked',
       'Bedrijfsregels, ontvangers of complete actuele bronnen ontbreken. Deze run blijft geregistreerd; geen automatische herverzending.',
     );
-  return deliver(store, mailer, org, report, settings, 'scheduler');
+  return deliver(store, mailer, org, report, settings, 'scheduler', context);
 }

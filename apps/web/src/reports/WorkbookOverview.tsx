@@ -74,7 +74,7 @@ export function WorkbookOverview({
     periods.find((p) => p.period === chosen) ?? filled.at(-1) ?? periods.at(-1);
   const columns = mode === 'day' ? dailyFields : fields;
   return (
-    <div className="workbook-print-root">
+    <div className="workbook-print-root management-design">
       <div className="workbook-print-heading">
         <h1>{data.organization.name} · managementoverzicht</h1>
         <p>

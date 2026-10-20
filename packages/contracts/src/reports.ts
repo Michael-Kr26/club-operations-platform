@@ -73,6 +73,8 @@ export interface ImportSummary extends Omit<StoredImport, 'rows'> {
   rowCount: number;
 }
 export interface ReportSettings {
+  greetingName?: string;
+  weeklyDay?: number | null;
   allowPartialDaily?: boolean;
   recipients: string[];
   time: string;
@@ -109,7 +111,7 @@ export interface Metrics {
 export interface ManagementReport {
   organization: ReportOrganization;
   dataset: Dataset;
-  kind: 'daily' | 'monthly';
+  kind: 'daily' | 'weekly' | 'monthly';
   from: string;
   through: string;
   rulesVersion: string;
@@ -137,7 +139,7 @@ export interface MailPreview {
 }
 export interface SendRun {
   id: string;
-  kind: 'daily' | 'monthly';
+  kind: 'daily' | 'weekly' | 'monthly';
   reportDate: string;
   dataset: Dataset;
   status: 'claimed' | 'captured' | 'sent' | 'missed' | 'blocked' | 'uncertain';

@@ -12,6 +12,8 @@ import { OutlookSource } from './outlook-source.js';
 import { ReportingService } from './service.js';
 
 const directories: string[] = [];
+// These tests create and reopen a real WASM/PostgreSQL data directory. Slow
+// disks and bounded CI workers need an I/O budget, not the 5s unit-test default.
 afterEach(async () => {
   for (const dir of directories.splice(0))
     await rm(dir, { recursive: true, force: true });
@@ -33,12 +35,12 @@ describe('Dockerloze lokale database', () => {
       ['--input-type=module', '-e', script],
       {
         cwd: fileURLToPath(new URL('../../', import.meta.url)),
-        timeout: 20000,
+        timeout: 55000,
       },
     );
     expect(result.stdout).toContain('restart-ok');
     expect(result.stderr).toBe('');
-  }, 25000);
+  }, 60000);
 
   it('bewaart een ophaalpoging en slaat retries, herstart en andere tenant over zodra de actuele import er is', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'cop-outlook-'));
@@ -110,7 +112,7 @@ describe('Dockerloze lokale database', () => {
       await pool.end();
       await db.close();
     }
-  }, 10000);
+  }, 60000);
 
   it('past migraties toe, bewaart importoriginelen en instellingen na herstart en weigert een tweede proces', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'cop-persistent-'));
@@ -123,6 +125,33 @@ describe('Dockerloze lokale database', () => {
       await expect(startLocalDatabase(dir, { port: 0 })).rejects.toThrow(
         'vergrendeld',
       );
+      expect(
+        await store.claim(
+          'sport-society',
+          'demo',
+          'weekly',
+          '2026-09-07',
+          'fixture',
+        ),
+      ).not.toBeNull();
+      expect(
+        await store.claim(
+          'sport-society',
+          'demo',
+          'weekly',
+          '2026-09-07',
+          'fixture',
+        ),
+      ).toBeNull();
+      expect(
+        await store.claim(
+          'sport-society',
+          'real',
+          'weekly',
+          '2026-09-07',
+          'fixture',
+        ),
+      ).not.toBeNull();
       await pool.query(
         'UPDATE report_settings SET settings=jsonb_set(settings,$1,$2::jsonb) WHERE organization_id=$3',
         ['{time}', '"09:15"', 'sport-society'],
@@ -150,6 +179,15 @@ describe('Dockerloze lokale database', () => {
       database = await startLocalDatabase(dir, { port: 0 });
       pool = new Pool({ connectionString: database.connectionString });
       const reopened = new ReportStore(pool);
+      expect(
+        await reopened.claim(
+          'sport-society',
+          'demo',
+          'weekly',
+          '2026-09-07',
+          'fixture',
+        ),
+      ).toBeNull();
       expect((await reopened.settings('sport-society')).time).toBe('09:15');
       const imports = await reopened.imports('sport-society', 'real');
       expect(imports).toHaveLength(1);
@@ -160,7 +198,7 @@ describe('Dockerloze lokale database', () => {
       await pool.end();
       await database.close();
     }
-  });
+  }, 60000);
   it('maakt precies één eerste beheerder zonder verbinding-deadlock', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'cop-setup-persistent-'));
     directories.push(dir);
@@ -204,5 +242,5 @@ describe('Dockerloze lokale database', () => {
       await service.onModuleDestroy();
       await database.close();
     }
-  }, 10000);
+  }, 60000);
 });

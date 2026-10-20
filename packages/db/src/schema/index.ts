@@ -149,7 +149,7 @@ export const reportRuns = pgTable(
       t.reportDate,
     ),
     check('report_run_dataset', sql`${t.dataset} IN ('real','demo')`),
-    check('report_run_kind', sql`${t.kind} IN ('daily','monthly')`),
+    check('report_run_kind', sql`${t.kind} IN ('daily','weekly','monthly')`),
     check(
       'report_run_status',
       sql`${t.status} IN ('claimed','captured','sent','missed','blocked','uncertain')`,

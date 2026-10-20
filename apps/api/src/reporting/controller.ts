@@ -19,7 +19,9 @@ import { requirePermission, ReportingService, WEB_ORIGIN } from './service.js';
 function headers(req: FastifyRequest) {
   return new Headers(
     Object.entries(req.headers).flatMap(([k, v]) =>
-      v === undefined ? [] : [[k, Array.isArray(v) ? v.join(',') : v]],
+      v === undefined
+        ? []
+        : [[k, Array.isArray(v) ? v.join(',') : v] as [string, string]],
     ),
   );
 }
@@ -100,7 +102,7 @@ export class ReportsController {
     @Req() req: FastifyRequest,
     @Param('organizationId') org: string,
     @Query('dataset') dataset: Dataset = 'real',
-    @Query('kind') kind: 'daily' | 'monthly' = 'daily',
+    @Query('kind') kind: 'daily' | 'weekly' | 'monthly' = 'daily',
     @Query('date') date: string,
   ) {
     return this.reports.report(
@@ -114,7 +116,7 @@ export class ReportsController {
     @Req() req: FastifyRequest,
     @Param('organizationId') org: string,
     @Query('dataset') dataset: Dataset = 'real',
-    @Query('kind') kind: 'daily' | 'monthly' = 'daily',
+    @Query('kind') kind: 'daily' | 'weekly' | 'monthly' = 'daily',
     @Query('date') date: string,
   ) {
     return this.reports.preview(
@@ -123,6 +125,52 @@ export class ReportsController {
       kind,
       date,
     );
+  }
+  @Get('weekly-series') async weeklySeries(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Query('dataset') dataset: Dataset = 'real',
+    @Query('date') date: string,
+    @Query('count') count = '12',
+  ) {
+    return this.timeSeries(req, org, dataset, date, count, 'weekly');
+  }
+  @Get('daily-series') async dailySeries(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Query('dataset') dataset: Dataset = 'real',
+    @Query('date') date: string,
+    @Query('count') count = '12',
+  ) {
+    return this.timeSeries(req, org, dataset, date, count, 'daily');
+  }
+  private async timeSeries(
+    req: FastifyRequest,
+    org: string,
+    dataset: Dataset,
+    date: string,
+    count: string,
+    kind: 'daily' | 'weekly',
+  ) {
+    const principal = await this.access(req, org),
+      n = Number(count);
+    if (!Number.isInteger(n) || n < 1 || n > 16)
+      throw new BadRequestException('Kies 1–16 perioden.');
+    const latest = await this.reports.report(principal, dataset, kind, date),
+      reports = [latest];
+    for (let i = 1; i < n; i++) {
+      const d = new Date(latest.from);
+      d.setUTCDate(d.getUTCDate() - (kind === 'weekly' ? 7 : 1) * i);
+      reports.push(
+        await this.reports.report(
+          principal,
+          dataset,
+          kind,
+          d.toISOString().slice(0, 10),
+        ),
+      );
+    }
+    return { reports: reports.reverse() };
   }
   @Get('mail-status') async mailStatus(
     @Req() req: FastifyRequest,
@@ -133,7 +181,12 @@ export class ReportsController {
   @Post('send') async send(
     @Req() req: FastifyRequest,
     @Param('organizationId') org: string,
-    @Body() body: { dataset: Dataset; kind: 'daily' | 'monthly'; date: string },
+    @Body()
+    body: {
+      dataset: Dataset;
+      kind: 'daily' | 'weekly' | 'monthly';
+      date: string;
+    },
   ) {
     return this.reports.send(
       await this.access(req, org, true),
@@ -145,7 +198,12 @@ export class ReportsController {
   @Post('capture') async capture(
     @Req() req: FastifyRequest,
     @Param('organizationId') org: string,
-    @Body() body: { dataset: Dataset; kind: 'daily' | 'monthly'; date: string },
+    @Body()
+    body: {
+      dataset: Dataset;
+      kind: 'daily' | 'weekly' | 'monthly';
+      date: string;
+    },
   ) {
     return this.reports.capture(
       await this.access(req, org, true),

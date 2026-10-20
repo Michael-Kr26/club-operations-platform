@@ -306,12 +306,12 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
   async report(
     principal: Principal,
     dataset: Dataset,
-    kind: 'daily' | 'monthly',
+    kind: 'daily' | 'weekly' | 'monthly',
     date: string,
   ) {
     if (
       !['real', 'demo'].includes(dataset) ||
-      !['daily', 'monthly'].includes(kind)
+      !['daily', 'weekly', 'monthly'].includes(kind)
     )
       throw new BadRequestException('Ongeldige rapportselectie.');
     try {
@@ -465,12 +465,21 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       body.timezone !== 'Europe/Amsterdam' ||
       typeof body.enabled !== 'boolean' ||
       typeof body.rulesApproved !== 'boolean' ||
-      body.rulesVersion !== REPORT_RULES_VERSION
+      body.rulesVersion !== REPORT_RULES_VERSION ||
+      (body.greetingName !== undefined &&
+        (typeof body.greetingName !== 'string' ||
+          body.greetingName.length > 80)) ||
+      (body.weeklyDay != null &&
+        (!Number.isInteger(body.weeklyDay) ||
+          body.weeklyDay < 0 ||
+          body.weeklyDay > 6))
     )
       throw new BadRequestException(
         'Ongeldige instellingen of bedrijfsregelversie.',
       );
     const settings = {
+      greetingName: body.greetingName?.trim() ?? '',
+      weeklyDay: body.weeklyDay ?? null,
       recipients: [...new Set(body.recipients)],
       time: body.time,
       timezone: body.timezone,
@@ -585,7 +594,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
   async send(
     principal: Principal,
     dataset: Dataset,
-    kind: 'daily' | 'monthly',
+    kind: 'daily' | 'weekly' | 'monthly',
     date: string,
   ) {
     requirePermission(principal, principal.organizationId, 'reports.manage');
@@ -621,12 +630,16 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       report,
       settings,
       principal.userId,
+      {
+        dashboard: await this.workbookDashboard(principal, dataset),
+        webUrl: WEB_ORIGIN,
+      },
     );
   }
   async capture(
     principal: Principal,
     dataset: Dataset,
-    kind: 'daily' | 'monthly',
+    kind: 'daily' | 'weekly' | 'monthly',
     date: string,
   ) {
     requirePermission(principal, principal.organizationId, 'reports.manage');
@@ -639,12 +652,16 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       report,
       settings,
       principal.userId,
+      {
+        dashboard: await this.workbookDashboard(principal, dataset),
+        webUrl: WEB_ORIGIN,
+      },
     );
   }
   async preview(
     principal: Principal,
     dataset: Dataset,
-    kind: 'daily' | 'monthly',
+    kind: 'daily' | 'weekly' | 'monthly',
     date: string,
   ) {
     return previewMail(
@@ -660,6 +677,12 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         ))
         ? 'microsoft365'
         : 'local-test-only',
+      {
+        greetingName: (await this.store.settings(principal.organizationId))
+          .greetingName,
+        dashboard: await this.workbookDashboard(principal, dataset),
+        webUrl: WEB_ORIGIN,
+      },
     );
   }
   async workbookDashboard(principal: Principal, dataset: Dataset) {
@@ -852,7 +875,11 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         } catch {
           mailError = true;
         }
-        for (const run of dueRuns(now, settings.time)) {
+        for (const run of dueRuns(
+          now,
+          settings.time,
+          settings.weeklyDay ?? null,
+        )) {
           const date = reportPeriod(run.kind, run.date).from;
           const report = calculateReport(
             org,
@@ -882,6 +909,18 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
             run,
             report,
             settings,
+            {
+              dashboard: await this.workbookDashboard(
+                {
+                  userId: 'scheduler',
+                  organizationId: org.id,
+                  locations: null,
+                  permissions: ['reports.read'],
+                },
+                'real',
+              ),
+              webUrl: WEB_ORIGIN,
+            },
           );
         }
       }

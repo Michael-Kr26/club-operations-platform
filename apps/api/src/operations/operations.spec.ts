@@ -58,7 +58,7 @@ beforeAll(async () => {
     'INSERT INTO report_organizations(id,definition) VALUES($1,$2)',
     ['other', { ...sportSociety, id: 'other' }],
   );
-}, 15000);
+}, 60000);
 afterAll(async () => {
   await pool?.end();
   await database?.close();

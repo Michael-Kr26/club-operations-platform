@@ -1,0 +1,162 @@
+.management-design {
+  --management-blue: #235ee8;
+  --management-navy: #17477d;
+  --management-pale: #edf4ff;
+  color: #0f172a;
+}
+.management-design h1,
+.management-design h2,
+.management-design h3,
+.management-design figcaption {
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: -0.02em;
+}
+.management-design h2 {
+  font-size: 30px;
+}
+.management-heading {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.management-eyebrow {
+  color: #17477d;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.management-note {
+  background: #edf4ff;
+  border-left: 3px solid #235ee8;
+  padding: 14px 18px;
+  color: #34516e;
+  line-height: 1.6;
+}
+.management-attention,
+.management-design .workbook-attention {
+  background: #fff0e3;
+  border: 1px solid #f2d3ba;
+  color: #7c3915;
+  padding: 18px;
+  border-radius: 10px;
+}
+.management-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin: 20px 0;
+}
+.management-chart-grid figure {
+  margin: 0;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  background: white;
+}
+.management-chart-grid figcaption {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 14px;
+}
+.management-chart-grid svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+.management-chart-grid svg text {
+  font:
+    11px Arial,
+    sans-serif;
+  fill: #52647b;
+}
+.management-chart-grid svg [role='button'] {
+  cursor: pointer;
+}
+.management-chart-grid svg [role='button']:focus {
+  outline: 3px solid #c65a16;
+  outline-offset: 3px;
+}
+.management-chart-grid small {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 16px;
+}
+.management-point {
+  background: #edf4ff;
+  padding: 12px;
+  min-height: 60px;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.management-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 18px;
+  font-size: 13px;
+}
+.management-legend span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.management-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.management-design .workbook-card {
+  background: #edf4ff;
+}
+.management-design .workbook-card strong {
+  color: #17477d;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+.management-design table thead {
+  background: #edf4ff;
+}
+.report-graphs {
+  display: grid;
+  gap: 14px;
+}
+.report-graphs select,
+.report-graphs input {
+  min-height: 40px;
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: white;
+  color: #172b46;
+  max-width: 100%;
+}
+.report-graphs label {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+}
+.report-mail {
+  min-height: 950px;
+}
+@media (max-width: 1100px) {
+  .management-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media print {
+  .management-chart-grid {
+    grid-template-columns: 1fr;
+  }
+  .management-chart-grid figure {
+    break-inside: avoid;
+  }
+  .report-graphs .report-fields,
+  .management-point {
+    display: none;
+  }
+}
