@@ -80,6 +80,8 @@ describe('module navigation', () => {
     ['/locaties', 'Locaties'],
     ['/rapportages', 'Ochtendrapport & churn'],
     ['/instellingen', 'Instellingen'],
+    ['/implementatie', 'Implementatie'],
+    ['/organisaties/sport-society/implementatie', 'Implementatie'],
     ['/locaties/achterveld', 'Achterveld'],
     ['/locaties/onbekend', 'Locatie niet beschikbaar'],
     ['/onbekend', 'Pagina niet gevonden'],

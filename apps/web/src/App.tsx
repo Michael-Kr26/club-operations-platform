@@ -1,3 +1,4 @@
+import { ImplementationPage } from './pages/ImplementationPage';
 import type { UserRole } from './auth/types';
 import { currentRoleAssignment } from './auth/mockCurrentUser';
 import { Link, NavLink, Routes, Route, useLocation } from 'react-router';
@@ -146,6 +147,7 @@ const managementNavigation: Array<{
 }> = [
   { icon: 'building', label: 'Locaties', to: '/locaties' },
   { icon: 'activity', label: 'Rapportages', to: '/rapportages' },
+  { icon: 'clipboard', label: 'Implementatie', to: '/implementatie' },
 ];
 
 const modules: Array<{ description: string; icon: IconName; title: string }> = [
@@ -343,6 +345,11 @@ export function App() {
 
         <div className="content">
           <Routes>
+            <Route path="/implementatie" element={<ImplementationPage />} />
+            <Route
+              path="/organisaties/:organizationSlug/implementatie"
+              element={<ImplementationPage />}
+            />
             <Route path="/organisaties" element={<OrganizationsPage />} />
             <Route
               path="/organisaties/:organizationSlug"
@@ -485,40 +492,26 @@ export function App() {
                       <div className="panel__heading">
                         <div>
                           <span className="panel__eyebrow">Implementatie</span>
-                          <h2>Opbouw COP</h2>
+                          <h2>Volgende stappen voor COP</h2>
                         </div>
-                        <span className="progress-panel__count">1/3</span>
                       </div>
-                      <ol className="timeline">
-                        <li className="timeline__item timeline__item--complete">
-                          <span className="timeline__marker">✓</span>
-                          <div>
-                            <strong>Technische basis</strong>
-                            <small>Web, API en database</small>
-                          </div>
-                        </li>
-                        <li className="timeline__item timeline__item--current">
-                          <span className="timeline__marker">2</span>
-                          <div>
-                            <strong>Identiteit & toegang</strong>
-                            <small>Accounts, clubs en rollen</small>
-                          </div>
-                        </li>
-                        <li className="timeline__item">
-                          <span className="timeline__marker">3</span>
-                          <div>
-                            <strong>Operationele modules</strong>
-                            <small>Per proces gecontroleerd bouwen</small>
-                          </div>
-                        </li>
-                      </ol>
+                      <p>
+                        De lokale basis, rapportages en operationele modules
+                        zijn gebouwd. Nu controleren we het ontwerp en maken we
+                        de dagelijkse ontvangst en verzending betrouwbaar.
+                      </p>
                       <div className="foundation-note">
-                        <span className="foundation-note__icon">i</span>
                         <p>
-                          De interface staat klaar. Gegevens verschijnen zodra
-                          de eerste module wordt gekoppeld.
+                          Live bronontvangst en echte mailverzending moeten nog
+                          worden ingericht en gecontroleerd.
                         </p>
                       </div>
+                      <Link
+                        className="button button--primary"
+                        to="/implementatie"
+                      >
+                        Bekijk het stappenplan
+                      </Link>
                     </aside>
                   </div>{' '}
                 </>
