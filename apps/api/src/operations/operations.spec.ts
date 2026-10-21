@@ -386,6 +386,7 @@ describe('lokale operationele werkruimte', () => {
         {
           provide: ReportingService,
           useValue: {
+            pool,
             operations: store,
             workbooks,
             organization: async () => sportSociety,
@@ -394,14 +395,16 @@ describe('lokale operationele werkruimte', () => {
               org: string,
               permission: Parameters<typeof requirePermission>[2],
             ) => {
-              const principal = headers.get('x-reader')
-                ? {
-                    ...manager,
-                    permissions: [
-                      'operations.read',
-                    ] as Principal['permissions'],
-                  }
-                : manager;
+              const principal = headers.get('x-admin')
+                ? admin
+                : headers.get('x-reader')
+                  ? {
+                      ...manager,
+                      permissions: [
+                        'operations.read',
+                      ] as Principal['permissions'],
+                    }
+                  : manager;
               requirePermission(principal, org, permission);
               return principal;
             },
@@ -438,6 +441,46 @@ describe('lokale operationele werkruimte', () => {
     try {
       const prefix = '/api/v1/organizations/sport-society/operations',
         headers = { origin: WEB_ORIGIN };
+      const inventoryDenied = await app.inject({
+        method: 'GET',
+        url: `${prefix}/inventory`,
+      });
+      expect(inventoryDenied.statusCode).toBe(403);
+      const stock = await app.inject({
+        method: 'GET',
+        url: `${prefix}/inventory`,
+        headers: { 'x-admin': '1' },
+      });
+      expect(stock.statusCode).toBe(200);
+      expect(stock.json().items[0].quantities.M).toBe(2);
+      const updateStock = {
+        dataset: 'real',
+        version: stock.json().version,
+        items: [
+          ...stock.json().items,
+          {
+            id: 'merch-bottle',
+            name: 'Drinkfles',
+            category: 'merch',
+            quantities: { total: 4 },
+          },
+        ],
+      };
+      const noOrigin = await app.inject({
+        method: 'POST',
+        url: `${prefix}/inventory`,
+        headers: { 'x-admin': '1' },
+        payload: updateStock,
+      });
+      expect(noOrigin.statusCode).toBe(400);
+      const savedStock = await app.inject({
+        method: 'POST',
+        url: `${prefix}/inventory`,
+        headers: { ...headers, 'x-admin': '1' },
+        payload: updateStock,
+      });
+      expect(savedStock.statusCode).toBe(201);
+      expect(savedStock.json().items.at(-1).quantities.total).toBe(4);
       const rejected = await app.inject({
         method: 'POST',
         url: `${prefix}/records`,

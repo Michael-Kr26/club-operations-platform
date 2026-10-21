@@ -1,3 +1,4 @@
+import { InventoryStore } from './inventory.js';
 import {
   Body,
   Controller,
@@ -57,6 +58,26 @@ export class OperationsController {
         'Wijzigingen alleen vanuit de lokale COP-browser.',
       );
     return this.reports.principal(headers(req), org, permission);
+  }
+  @Get('inventory') async inventory(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') orgId: string,
+    @Query('dataset') dataset: Dataset = 'real',
+  ) {
+    const principal = await this.access(req, orgId);
+    return new InventoryStore(this.reports.pool).read(
+      orgId,
+      principal,
+      dataset,
+    );
+  }
+  @Post('inventory') async saveInventory(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') orgId: string,
+    @Body() body: Parameters<InventoryStore['save']>[2],
+  ) {
+    const principal = await this.access(req, orgId, 'operations.manage');
+    return new InventoryStore(this.reports.pool).save(orgId, principal, body);
   }
   @Get() async workspace(
     @Req() req: FastifyRequest,

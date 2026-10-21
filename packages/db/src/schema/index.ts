@@ -257,3 +257,21 @@ export const operationRecords = pgTable(
     ),
   ],
 );
+
+export const inventoryStock = pgTable(
+  'inventory_stock',
+  {
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => reportOrganizations.id),
+    dataset: text('dataset').notNull(),
+    items: jsonb('items').notNull(),
+    version: integer('version').notNull().default(1),
+    updatedAt: time('updated_at'),
+    updatedBy: text('updated_by').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.organizationId, t.dataset] }),
+    check('inventory_dataset', sql`${t.dataset} IN ('real','demo')`),
+  ],
+);

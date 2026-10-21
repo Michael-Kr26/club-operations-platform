@@ -62,3 +62,15 @@ Updates gebruiken versienummers: wanneer twee schermen hetzelfde record verander
 ## Verificatie
 
 `pnpm.cmd verify` controleert formattering, lint, types, tests en builds. Integratietests gebruiken de echte lokale PostgreSQL-protocolopslag en controleren scopes, rechten, versies, bronverificatie, dubbele taken, gelijktijdige roosterconflicten, vaardigheden, datumgrenzen, terugkerende taken en contacthistorie. Componenttests controleren leesrechten, onbekende waarden, ledenfilters en checklistbediening. Een volledige lokale start/import/bewerking/herstart wordt daarnaast met HTTP gecontroleerd. Browseropmaak is niet met een geautomatiseerde visuele browsertest vastgesteld.
+
+## Voorraadbeheer
+
+Open `/voorraad` (of `/organisaties/:organizationSlug/voorraad`) via het zijmenu. Er zijn aparte overzichten **Werkkleding** en **Merchandise**; `/voorraad?view=merch` opent direct merchandise.
+
+De centrale voorraad is alleen toegankelijk met organisatierechten (`locations=null`) en `operations.read`. Aanpassen vereist daarnaast `operations.manage`. Locatiemanagers krijgen geen toegang tot de centrale organisatievoorraad. Voorraad per club, uitgifte aan medewerkers en inkoop/verkoop zijn nog niet inbegrepen.
+
+Sport Society start in Werkelijk met Werkshirts M=2, L=2 en XL=3. S en XXL zijn nog niet geteld. Vesten en truien hebben S/M/L/XL/XXL; tassen hebben één aantal. Niet opgegeven aantallen blijven onbekend, geen nul. Deze eenmalige starttelling wordt bij herstart niet over bestaande voorraad geschreven. Merchandise begint leeg, net als de voorraad van andere organisaties en de afzonderlijke demodataset.
+
+Gebruik **Artikel toevoegen**, kies een naam, categorie en S t/m XXL of één totaal. Vul aantallen in en klik **Voorraad opslaan**. Toevoegen aan het overzicht alleen bewaart nog niet; de melding toont niet-opgeslagen wijzigingen. Wijzigingen gelden voor de hele voorraad, ook als een ander overzicht actief is. De telling staat in de lokale database, met datum en een auditregistratie. Conflicten bij gelijktijdig opslaan worden geweigerd; vernieuw dan bewust het overzicht. Er is voorlopig geen verwijderknop: bestaande artikelen blijven bewaard.
+
+De lokale starter voert migratie `0006_inventory_stock` automatisch uit. Er zijn geen nieuwe pakketten of mailkoppelingen nodig.

@@ -116,3 +116,19 @@ export interface MemberDirectory {
   sources: { id: string; locationId: string; asOf: string; filename: string }[];
   warnings: string[];
 }
+
+export type InventoryCategory =
+  'shirts' | 'vests' | 'sweaters' | 'bags' | 'merch';
+export type ClothingSize = 'S' | 'M' | 'L' | 'XL' | 'XXL';
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: InventoryCategory;
+  quantities: Partial<Record<ClothingSize | 'total', number | null>>;
+}
+export interface InventoryOverview {
+  items: InventoryItem[];
+  version: number;
+  updatedAt: string | null;
+  canWrite: boolean;
+}

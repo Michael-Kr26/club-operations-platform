@@ -1,3 +1,4 @@
+import { InventoryPage } from './operations/InventoryPage';
 import { ImplementationPage } from './pages/ImplementationPage';
 import type { UserRole } from './auth/types';
 import { currentRoleAssignment } from './auth/mockCurrentUser';
@@ -138,6 +139,7 @@ const primaryNavigation: Array<{
   { icon: 'calendar', label: 'Planning', to: '/planning' },
   { icon: 'clipboard', label: 'Taken', to: '/taken' },
   { icon: 'clipboard', label: 'Controles', to: '/controles' },
+  { icon: 'clipboard', label: 'Voorraadbeheer', to: '/voorraad' },
 ];
 
 const managementNavigation: Array<{
@@ -345,6 +347,11 @@ export function App() {
 
         <div className="content">
           <Routes>
+            <Route path="/voorraad" element={<InventoryPage />} />
+            <Route
+              path="/organisaties/:organizationSlug/voorraad"
+              element={<InventoryPage />}
+            />
             <Route path="/implementatie" element={<ImplementationPage />} />
             <Route
               path="/organisaties/:organizationSlug/implementatie"

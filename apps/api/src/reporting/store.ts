@@ -1,3 +1,4 @@
+import { initialSportSocietyInventory } from '../operations/inventory.js';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import type {
@@ -62,6 +63,15 @@ export class ReportStore {
     await this.pool.query(
       'INSERT INTO report_settings(organization_id,settings) VALUES($1,$2) ON CONFLICT DO NOTHING',
       [sportSociety.id, defaultSettings],
+    );
+    await this.pool.query(
+      'INSERT INTO inventory_stock(organization_id,dataset,items,updated_by) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+      [
+        sportSociety.id,
+        'real',
+        JSON.stringify(initialSportSocietyInventory()),
+        'initial-inventory-2026-10-21',
+      ],
     );
   }
   async organization(id: string): Promise<ReportOrganization | null> {
