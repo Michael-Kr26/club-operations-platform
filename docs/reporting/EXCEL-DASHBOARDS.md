@@ -110,3 +110,29 @@ Unit- en integratietests dekken de bronberekeningen, ontbrekende waarden, dubbel
 De frontend heeft componenttests en een geslaagde productiebuild. Een echte browser/screenshotcontrole kon hier niet worden uitgevoerd doordat de browserdownload niet beschikbaar was; controleer de vormgeving op de werklaptop. Dit is geen bevestiging dat automatische mailtoegang is ingesteld.
 
 ZIP-uitbreiding gecontroleerd op 18 oktober 2026: 91 tests (68 API, 23 web), TypeScript, lint, formattering en productiebuild geslaagd. De vijf aangeleverde bestanden zijn samen als een gecomprimeerd ZIP via Vite/Nest geïmporteerd. Eerst 3 verwerkt / 2 clubtoewijzing nodig, daarna alle 5 geaccepteerd met expliciete testcontext. Herhaling telt niet dubbel; ZIP-originelen zijn bytegelijk en het gezamenlijke overzicht (33 bronperiodes, inclusief onbekende toekomstige invoer) blijft na procesherstart behouden. De testtoewijzing van leden/omzet aan Barneveld bevestigt niet de echte herkomst. Geen echte e-mails verstuurd. Browser/screenshotcontrole blijft hier niet beschikbaar.
+
+## Vaste bestanden en gedownloade rapportages (lokale Windows-start)
+
+Bij `pnpm.cmd dev:local` gebruikt Sport Society standaard het bestand:
+
+```text
+C:\Users\mssyt\OneDrive\Documenten\Werkdocumenten\SportSociety\Taken\AOM Taken\Healthplanner_leden_updates.xlsx
+```
+
+Het pad wordt opgebouwd vanuit de huidige Windows-gebruikersmap; op Michaels laptop is dat `C:\Users\mssyt`. COP controleert dit alleen lokaal, bij opstart en daarna maximaal eenmaal per minuut. Gewijzigde inhoud wordt als Werkelijk geïmporteerd, met de club- en week-/maandperioden uit de bestaande Healthplanner-updatetabel. Het download- of wijzigingsmoment wordt nooit als rapportageperiode gebruikt. Dezelfde inhoud wordt ook na herstart niet dubbel opgeslagen. Een ontbrekend, vergrendeld, nog geschreven of ongeldig bestand vervangt geen eerder geldige gegevens. De bronstatus en **Nu ophalen** staan boven het grafische dashboard (`/rapportages/excel`), zichtbaar voor organisatiebeheerders. OneDrive moet het bestand op dit apparaat beschikbaar hebben.
+
+Voor andere gedownloade Dewi- en Healthplanner-rapportages staat de standaard importmap naast dat bestand:
+
+```text
+C:\Users\mssyt\OneDrive\Documenten\Werkdocumenten\SportSociety\Taken\AOM Taken\COP imports
+```
+
+Bewaar downloads zelf in die map (bijvoorbeeld met **Opslaan als** in de browser). COP opent de websites of mailboxen niet zelf. De map wordt lokaal aangemaakt bij de eerste controle en ongeveer iedere 30 seconden bekeken, maximaal drie gewijzigde bestanden per scan. ZIP/XLSX/EML wordt volgens de bestaande adapters verwerkt; onvoltooide downloads en Excel-lockbestanden worden niet geïmporteerd. Originelen blijven staan. Er wordt geen algemene Downloads-map doorzocht.
+
+De lokale start schakelt de mapimport voor de geconfigureerde organisatie en Werkelijk de eerste keer in. Een eerdere expliciete uitschakeling wordt behouden. Je kunt deze keuze wijzigen onder **Importinstellingen en bestandsstatus** op het dashboard. Per organisatie en dataset blijven imports gescheiden.
+
+Healthplanner-EML, Healthplanner-updatetabellen en herkenbare Dewi-forecasts kunnen met hun eigen club-/periodegegevens automatisch door. Een Dewi-ledenexport zonder club of peildatum en een omzetexport zonder club vragen nog om bevestiging via de bestaande uploadcontrole; automatisch downloaden maakt deze ontbrekende informatie niet betrouwbaar. CSV-bestanden in deze map, oude `.xls`-bestanden en niet-ondersteunde exportindelingen worden nog niet verwerkt. Dit verandert niets aan de afzonderlijke bestaande CSV-rapportage-import.
+
+Het Healthplanner-bronpad en de importmap kunnen serverzijdig worden overschreven met `COP_HEALTHPLANNER_FILE` en `COP_IMPORT_FOLDER`. Voor een andere organisatie zijn er `COP_HEALTHPLANNER_ORGANIZATION` en `COP_IMPORT_ORGANIZATION`. Een lege `COP_HEALTHPLANNER_FILE` schakelt de vaste bron uit; de map kan via het dashboard worden uitgeschakeld. Buiten de lokale PGlite-start op loopback blijven beide lokale bronnen uit. Padkeuzes kunnen niet via een browserverzoek worden opgegeven.
+
+COP moet draaien om op te halen. Bestanden die tijdens uitgeschakelde COP zijn opgeslagen, worden bij de volgende start gecontroleerd. Er wordt hiermee geen echte mailverzending ingeschakeld. Deze bronroutes zijn getest met synthetische bestanden; Michaels fysieke OneDrive-bestand wordt pas op zijn laptop gelezen na ophalen en starten van deze versie.

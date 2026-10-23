@@ -60,7 +60,10 @@ export function WorkbookSettings({
     }
   }
   return (
-    <details className="panel report-panel workbook-settings">
+    <details
+      id="workbook-settings"
+      className="panel report-panel workbook-settings"
+    >
       <summary>Importmap, signaleringsgrenzen en clubtoewijzingen</summary>
       <p>
         Gelden voor deze organisatie en dataset. Dit zijn instelbare signalen;

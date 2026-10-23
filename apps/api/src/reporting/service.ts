@@ -1,3 +1,4 @@
+import { LocalWorkbookFile } from './local-workbook-file.js';
 import {
   BadRequestException,
   ForbiddenException,
@@ -11,7 +12,7 @@ import {
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 import { Pool, type PoolClient } from 'pg';
 import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import type {
@@ -95,6 +96,12 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
     this.dataDirectory,
     this.workbooks,
   );
+  readonly localWorkbookFile = new LocalWorkbookFile(this.workbooks, {
+    available: this.workbookInbox.available,
+    path: process.env.COP_HEALTHPLANNER_FILE ?? '',
+    organizationId:
+      process.env.COP_HEALTHPLANNER_ORGANIZATION ?? 'sport-society',
+  });
   auth!: ReturnType<typeof betterAuth>;
   ready = false;
   private initializationError: string | null = null;
@@ -131,6 +138,22 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       };
       this.auth = betterAuth(authOptions);
       await this.store.seed();
+      if (this.workbookInbox.available && process.env.COP_IMPORT_FOLDER) {
+        const orgId = process.env.COP_IMPORT_ORGANIZATION ?? 'sport-society';
+        if (await this.store.organization(orgId)) {
+          const preferences = await this.workbooks.preferences.read(
+            orgId,
+            'real',
+          );
+          if (preferences.inboxEnabled === undefined)
+            await this.workbooks.preferences.inbox(
+              orgId,
+              'real',
+              'local-import-default',
+              true,
+            );
+        }
+      }
       const { rows } = await this.pool.query(
         'SELECT count(*) AS n FROM report_access',
       );
@@ -693,6 +716,24 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
     const organization = scopedOrganization(org, principal);
     const imports = await this.workbooks.list(principal, dataset);
     const preferences = await this.workbooks.preferences.read(org.id, dataset);
+    const localFile =
+      dataset === 'real' &&
+      principal.locations === null &&
+      principal.permissions.includes('reports.manage')
+        ? this.localWorkbookFile.status(org.id)
+        : undefined;
+    if (localFile && !localFile.lastImportedAt && localFile.path) {
+      const filename = basename(localFile.path)
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .slice(0, 120);
+      localFile.lastImportedAt =
+        imports.find(
+          (item) =>
+            item.filename === filename &&
+            item.status === 'accepted' &&
+            item.report?.kind === 'healthplanner',
+        )?.importedAt ?? null;
+    }
     return {
       organization,
       dataset,
@@ -703,6 +744,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         principal.permissions.includes('reports.manage')
           ? preferences
           : undefined,
+      localFile,
       inbox:
         principal.locations === null &&
         principal.permissions.includes('reports.manage')
@@ -800,6 +842,22 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
     requirePermission(principal, principal.organizationId, 'reports.manage');
     return this.outlook!.status(principal.organizationId);
   }
+  async scanLocalWorkbookFile(principal: Principal) {
+    requirePermission(principal, principal.organizationId, 'reports.manage');
+    if (
+      principal.locations !== null ||
+      !this.localWorkbookFile.status(principal.organizationId)
+    )
+      throw new BadRequestException(
+        'Vaste bestandsimport is niet beschikbaar voor deze organisatie.',
+      );
+    await this.localWorkbookFile.scan(
+      await this.organization(principal.organizationId),
+      new Date(),
+      true,
+    );
+    return this.localWorkbookFile.status(principal.organizationId);
+  }
   async scanWorkbookInbox(principal: Principal, body: { dataset: Dataset }) {
     requirePermission(principal, principal.organizationId, 'reports.manage');
     if (
@@ -834,6 +892,7 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
       );
       for (const r of rows) {
         const org = await this.organization(r.organization_id);
+        await this.localWorkbookFile.scan(org, now);
         await this.outlook!.poll(org, now, async (bytes) => {
           const day = new Intl.DateTimeFormat('en-CA', {
             timeZone: 'Europe/Amsterdam',

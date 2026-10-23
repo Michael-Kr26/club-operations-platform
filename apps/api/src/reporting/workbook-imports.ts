@@ -22,6 +22,7 @@ export class WorkbookImports {
     principal: Principal,
     body: {
       dataset: Dataset;
+      expectedKind?: WorkbookReport['kind'];
       filename: string;
       content: string;
       locationId?: string;
@@ -58,6 +59,12 @@ export class WorkbookImports {
         scopeConfirmed: body.scopeConfirmed,
         filename: body.filename,
       });
+      if (body.expectedKind && report.kind !== body.expectedKind) {
+        report = null;
+        throw new Error(
+          'Het vaste bronbestand moet een Healthplanner-updatetabel zijn.',
+        );
+      }
     } catch (e) {
       error = (e as Error).message.slice(0, 1000);
     }

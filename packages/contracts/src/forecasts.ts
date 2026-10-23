@@ -40,6 +40,7 @@ export interface ForecastDashboard {
   combined?: CombinedWorkbookDashboard;
   preferences?: WorkbookPreferences;
   inbox?: WorkbookInboxStatus;
+  localFile?: LocalWorkbookFileStatus;
 }
 
 export interface WorkbookThresholds {
@@ -127,4 +128,14 @@ export interface CombinedWorkbookDashboard {
       changes: Record<string, MetricChange>;
     }
   >;
+}
+
+export interface LocalWorkbookFileStatus {
+  enabled: boolean;
+  path: string | null;
+  lastCheckedAt: string | null;
+  lastImportedAt: string | null;
+  status:
+    'pending' | 'waiting' | 'unchanged' | 'imported' | 'rejected' | 'error';
+  message: string;
 }

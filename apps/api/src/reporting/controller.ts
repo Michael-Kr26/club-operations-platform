@@ -307,6 +307,14 @@ export class ReportsController {
       body,
     );
   }
+  @Post('workbooks/local-file') async scanLocalWorkbookFile(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+  ) {
+    return this.reports.scanLocalWorkbookFile(
+      await this.access(req, org, true),
+    );
+  }
   @Post('workbooks/inbox') async scanWorkbookInbox(
     @Req() req: FastifyRequest,
     @Param('organizationId') org: string,

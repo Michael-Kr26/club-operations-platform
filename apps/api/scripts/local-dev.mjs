@@ -1,3 +1,7 @@
+import {
+  defaultHealthplannerFile,
+  defaultImportFolder,
+} from './local-workbook-path.mjs';
 import { spawn } from 'node:child_process';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -88,6 +92,13 @@ try {
     DATABASE_URL: database.connectionString,
     COP_DATA_DIR: directory,
     COP_STORAGE_MODE: 'pglite-local',
+    COP_IMPORT_FOLDER: process.env.COP_IMPORT_FOLDER ?? defaultImportFolder(),
+    COP_IMPORT_ORGANIZATION:
+      process.env.COP_IMPORT_ORGANIZATION ?? 'sport-society',
+    COP_HEALTHPLANNER_FILE:
+      process.env.COP_HEALTHPLANNER_FILE ?? defaultHealthplannerFile(),
+    COP_HEALTHPLANNER_ORGANIZATION:
+      process.env.COP_HEALTHPLANNER_ORGANIZATION ?? 'sport-society',
     COP_LOCAL_REPORT_ACCESS: process.env.COP_LOCAL_REPORT_ACCESS ?? '1',
     PORT: '3000',
     HOST: '127.0.0.1',

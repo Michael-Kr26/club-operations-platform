@@ -1,6 +1,6 @@
 import { constants } from 'node:fs';
 import { mkdir, open, readdir, lstat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, isAbsolute } from 'node:path';
 import type {
   Dataset,
   Principal,
@@ -22,6 +22,14 @@ export class WorkbookInbox {
       process.env.NODE_ENV !== 'production',
   ) {}
   path(org: string, dataset: Dataset) {
+    if (
+      this.available &&
+      org === (process.env.COP_IMPORT_ORGANIZATION ?? 'sport-society') &&
+      dataset === 'real' &&
+      process.env.COP_IMPORT_FOLDER &&
+      isAbsolute(process.env.COP_IMPORT_FOLDER)
+    )
+      return process.env.COP_IMPORT_FOLDER;
     return join(this.directory, 'inbox', encodeURIComponent(org), dataset);
   }
   status(org: string, dataset: Dataset, enabled: boolean): WorkbookInboxStatus {
@@ -108,6 +116,7 @@ export class WorkbookInbox {
       const files = (await readdir(path, { withFileTypes: true })).filter(
         (f) =>
           f.isFile() &&
+          !f.name.startsWith('~$') &&
           !f.isSymbolicLink() &&
           /\.(zip|xlsx|eml)$/i.test(f.name),
       );

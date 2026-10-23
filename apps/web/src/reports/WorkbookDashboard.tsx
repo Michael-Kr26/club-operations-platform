@@ -1,3 +1,5 @@
+import { LocalImportFolder } from './LocalImportFolder';
+import { LocalWorkbookSource } from './LocalWorkbookSource';
 import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -537,7 +539,9 @@ export function WorkbookDashboard() {
       api<ForecastDashboard>(`${base}/workbooks?dataset=${dataset}`),
     enabled: !!access.data && !access.error,
     refetchInterval: (query) =>
-      query.state.data?.inbox?.enabled ? 30_000 : false,
+      query.state.data?.inbox?.enabled || query.state.data?.localFile?.enabled
+        ? 30_000
+        : false,
     retry: false,
   });
   const manage =
@@ -582,6 +586,30 @@ export function WorkbookDashboard() {
       )}
       {access.data && !access.error && (
         <>
+          {manage && data.data?.localFile && (
+            <LocalWorkbookSource
+              source={data.data.localFile}
+              base={base}
+              request={api}
+              onUpdated={async () => {
+                await client.invalidateQueries({
+                  queryKey: ['report-workbooks', org, dataset],
+                });
+              }}
+            />
+          )}
+          {manage && dataset === 'real' && data.data?.inbox?.available && (
+            <LocalImportFolder
+              inbox={data.data.inbox}
+              base={base}
+              request={api}
+              onUpdated={async () => {
+                await client.invalidateQueries({
+                  queryKey: ['report-workbooks', org, dataset],
+                });
+              }}
+            />
+          )}
           {data.data && <ReportCharts data={data.data} />}
           {data.data && (
             <WorkbookOverview
