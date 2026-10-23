@@ -83,7 +83,8 @@ export interface WorkbookAttention {
 }
 
 export interface WorkbookSupplement {
-  kind: 'members' | 'finance' | 'healthplanner';
+  kind: 'members' | 'finance' | 'healthplanner' | 'payments';
+  paymentTransactions?: { reportId: string; amountCents: number }[];
   locationIds: string[];
   period: string;
   warnings: string[];

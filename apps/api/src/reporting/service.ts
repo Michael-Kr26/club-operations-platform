@@ -793,6 +793,8 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
     body: Parameters<WorkbookImports['import']>[2],
   ) {
     requirePermission(principal, principal.organizationId, 'reports.manage');
+    if (/\.pdf$/i.test(body?.filename ?? '') && principal.locations !== null)
+      throw new ForbiddenException('PDF-import vereist organisatierechten.');
     const org = await this.organization(principal.organizationId);
     try {
       return await this.workbooks.import(org, principal, body);
@@ -873,6 +875,21 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
   async sourceStatus(principal: Principal) {
     requirePermission(principal, principal.organizationId, 'reports.manage');
     return this.outlook!.status(principal.organizationId);
+  }
+  async confirmInboxPdf(
+    principal: Principal,
+    body: Parameters<WorkbookInbox['confirmPdf']>[2],
+  ) {
+    requirePermission(principal, principal.organizationId, 'reports.manage');
+    try {
+      return await this.workbookInbox.confirmPdf(
+        await this.organization(principal.organizationId),
+        principal,
+        body,
+      );
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
+    }
   }
   async scanLocalWorkbookFile(principal: Principal) {
     requirePermission(principal, principal.organizationId, 'reports.manage');

@@ -1,5 +1,6 @@
 import { constants } from 'node:fs';
-import { mkdir, open, readdir, lstat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { mkdir, open, readdir, lstat, writeFile } from 'node:fs/promises';
 import { join, isAbsolute } from 'node:path';
 import type {
   Dataset,
@@ -9,7 +10,9 @@ import type {
 } from '@cop/contracts';
 import type { WorkbookImports } from './workbook-imports.js';
 
-type Body = Parameters<WorkbookImports['import']>[2];
+type Body = Parameters<WorkbookImports['import']>[2] & {
+  contentSha256?: string;
+};
 export class WorkbookInbox {
   private states = new Map<string, WorkbookInboxStatus>();
   private seen = new Map<string, string>();
@@ -98,6 +101,73 @@ export class WorkbookInbox {
       this.running.delete(key);
     }
   }
+  async confirmPdf(
+    org: ReportOrganization,
+    principal: Principal,
+    body: {
+      dataset: Dataset;
+      filename: string;
+      locationId: string;
+      from: string;
+      through: string;
+      scopeConfirmed: boolean;
+      periodConfirmed: boolean;
+    },
+  ) {
+    if (
+      !this.available ||
+      principal.organizationId !== org.id ||
+      principal.locations !== null ||
+      !principal.permissions.includes('reports.manage') ||
+      !body ||
+      !['real', 'demo'].includes(body.dataset) ||
+      typeof body.filename !== 'string' ||
+      !/\.pdf$/i.test(body.filename) ||
+      body.filename
+        .split(/[\\/]/)
+        .some((part) => part === '..' || part === '.' || !part) ||
+      body.filename.includes(':')
+    )
+      throw new Error('Ongeldig PDF-bestand of geen toegang tot de importmap.');
+    if (
+      !this.status(org.id, body.dataset, true).files.some(
+        (file) => file.filename === body.filename,
+      )
+    )
+      throw new Error('PDF nog niet gevonden. Controleer eerst de importmap.');
+    const path = join(this.path(org.id, body.dataset), body.filename);
+    const bytes = await this.readRegular(path, 5000000);
+    const result = await this.imports.import(org, principal, {
+      ...body,
+      content: bytes.toString('base64'),
+    });
+    if (result.status !== 'accepted')
+      throw new Error(result.error ?? 'PDF niet verwerkt.');
+    const metadata = {
+      locationId: body.locationId,
+      from: body.from,
+      through: body.through,
+      scopeConfirmed: body.scopeConfirmed,
+      periodConfirmed: body.periodConfirmed,
+      contentSha256: createHash('sha256').update(bytes).digest('hex'),
+    };
+    await writeFile(path + '.cop.json', JSON.stringify(metadata), {
+      mode: 0o600,
+    });
+    this.seen.delete(path);
+    const state = this.states.get(org.id + '/' + body.dataset);
+    if (state)
+      state.files = state.files.map((file) =>
+        file.filename === body.filename
+          ? {
+              filename: body.filename,
+              status: 'accepted',
+              message: 'PDF verwerkt met bevestigde club en periode.',
+            }
+          : file,
+      );
+    return result;
+  }
   private async discover(root: string) {
     const files: { name: string }[] = [];
     let examined = 0;
@@ -150,7 +220,7 @@ export class WorkbookInbox {
           now.getTime() - stat.mtimeMs < 3000
         )
           continue;
-        if (/\.(pdf|xls|csv)$/i.test(filename)) {
+        if (/\.(xls|csv)$/i.test(filename)) {
           state.files = [
             {
               filename,
@@ -206,6 +276,15 @@ export class WorkbookInbox {
             full,
             /\.zip$/i.test(filename) ? 20_000_000 : 5_000_000,
           );
+          if (
+            metadata.contentSha256 &&
+            metadata.contentSha256 !==
+              createHash('sha256').update(bytes).digest('hex')
+          ) {
+            message =
+              'Bestandsinhoud is gewijzigd. Bevestig club en periode opnieuw voor deze PDF.';
+            throw new Error('Context verouderd.');
+          }
           const body: Body = {
             ...metadata,
             filename,
@@ -213,7 +292,9 @@ export class WorkbookInbox {
             content: bytes.toString('base64'),
             rememberMapping: false,
           };
-          const preview = await this.imports.preview(org, body);
+          const preview = /\.pdf$/i.test(filename)
+            ? []
+            : await this.imports.preview(org, body);
           const contexts = { ...body.fileContexts };
           for (const entry of preview) {
             if (entry.kind !== 'members' && entry.kind !== 'finance') continue;

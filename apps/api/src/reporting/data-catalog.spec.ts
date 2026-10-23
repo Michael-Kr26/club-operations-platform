@@ -71,7 +71,7 @@ describe('gegevenscatalogus op basis van echte imports', () => {
     });
     expect(e.locations[1]?.status).toBe('missing');
     expect(entry('classes', []).status).toBe('planned');
-    expect(entry('finance-pdf', []).status).toBe('planned');
+    expect(entry('finance-pdf', []).status).toBe('missing');
     expect(
       entry('subscriptions', [workbook('hp', { total: 100 })]).status,
     ).toBe('missing');

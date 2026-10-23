@@ -54,14 +54,15 @@ const definitions: Definition[] = [
   {
     id: 'finance-pdf',
     category: 'Omzet',
-    title: 'Omzetrapporten als PDF',
-    description: 'PDF-bestanden in bijvoorbeeld imports/Omzet/Achterveld.',
-    fields: [],
-    formats: 'Nog geen PDF-importadapter',
+    title: 'PAY. transactieoverzicht (betalingen)',
+    description:
+      'Positieve en negatieve transactiebedragen uit het PAY.-PDF-rapport.',
+    fields: ['Betaaloverzicht'],
+    formats: 'PAY. transactieoverzicht (.pdf)',
     needed:
-      'Eén voorbeeld-PDF om bedragen, btw, periode en clubvermelding betrouwbaar te herkennen.',
-    note: 'Een gevonden PDF telt nog niet als geïmporteerde omzet. De inhoud is nog niet uitgelezen.',
-    route: null,
+      'Een origineel tekst-PDF met ReportId en Bedrag / Aantal. Bevestig club en inclusieve rapportageperiode bij de PDF-import.',
+    note: 'Betalingen zijn geen geboekte omzet. Zonder individuele datums volgt geen dag/weektoerekening; negatieve bedragen zijn geen bewijs van mislukte incasso’s.',
+    route: 'files',
   },
   {
     id: 'monthly-finance',
@@ -292,6 +293,18 @@ export function dataCatalog(
             month.opening !== null || month.closing !== null
               ? ['Ledenontwikkeling']
               : [],
+          ),
+        );
+      continue;
+    }
+    if (report.kind === 'payments') {
+      for (const loc of report.locationIds)
+        add(
+          'finance-pdf',
+          fact(
+            loc,
+            report.period,
+            report.paymentTransactions?.length ? ['Betaaloverzicht'] : [],
           ),
         );
       continue;

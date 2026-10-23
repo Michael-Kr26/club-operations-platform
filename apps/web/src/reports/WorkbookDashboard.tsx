@@ -1,3 +1,4 @@
+import { PaymentPdfUpload } from './PaymentPdfUpload';
 import { LocalImportFolder } from './LocalImportFolder';
 import { LocalWorkbookSource } from './LocalWorkbookSource';
 import { useState } from 'react';
@@ -65,6 +66,7 @@ const kindLabel = {
   members: 'Ledenexport',
   finance: 'Omzet',
   healthplanner: 'Healthplanner',
+  payments: 'PAY. betalingenoverzicht',
 };
 function Cards({ items }: { items: { label: string; value: string }[] }) {
   return (
@@ -482,15 +484,17 @@ export function SupplementView({
       {report.categories.length > 0 && (
         <section className="panel report-panel">
           <h2>
-            {report.kind === 'finance'
-              ? 'Omzetverdeling per artikel (incl. BTW)'
+            {report.kind === 'finance' || report.kind === 'payments'
+              ? report.kind === 'payments'
+                ? 'Positieve en negatieve transactiebedragen'
+                : 'Omzetverdeling per artikel (incl. BTW)'
               : 'Statusverdeling in de selectie'}
           </h2>
           <div className="workbook-bars">
             {report.categories.map((c, i) => (
               <div className="workbook-category" key={i}>
                 <span>{c.name}</span>
-                {report.kind === 'finance' && (
+                {(report.kind === 'finance' || report.kind === 'payments') && (
                   <div className="workbook-bar-track">
                     <i
                       className={c.amountCents < 0 ? 'out' : 'in'}
@@ -501,7 +505,7 @@ export function SupplementView({
                   </div>
                 )}
                 <strong>
-                  {report.kind === 'finance'
+                  {report.kind === 'finance' || report.kind === 'payments'
                     ? money(c.amountCents)
                     : number(c.count)}
                 </strong>
@@ -697,6 +701,17 @@ export function WorkbookDashboard() {
           )}
           {manage && data.data && (
             <>
+              <PaymentPdfUpload
+                key={`pdf-${org}-${dataset}`}
+                data={data.data}
+                base={base}
+                request={api}
+                onImported={async () => {
+                  await client.invalidateQueries({
+                    queryKey: ['report-workbooks', org, dataset],
+                  });
+                }}
+              />
               <WorkbookUpload
                 key={org + dataset}
                 data={data.data}

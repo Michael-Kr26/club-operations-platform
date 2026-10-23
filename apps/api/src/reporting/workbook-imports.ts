@@ -27,6 +27,9 @@ export class WorkbookImports {
       content: string;
       locationId?: string;
       asOf?: string;
+      from?: string;
+      through?: string;
+      periodConfirmed?: boolean;
       scopeConfirmed?: boolean;
       rememberMapping?: boolean;
       fileContexts?: Record<
@@ -39,13 +42,13 @@ export class WorkbookImports {
       !body ||
       !['real', 'demo'].includes(body.dataset) ||
       typeof body.filename !== 'string' ||
-      !/\.(xlsx|eml)$/i.test(body.filename) ||
+      !/\.(xlsx|eml|pdf)$/i.test(body.filename) ||
       typeof body.content !== 'string' ||
       !/^[A-Za-z0-9+/]*={0,2}$/.test(body.content) ||
       body.content.length > 7_000_000
     )
       throw new Error(
-        'Gebruik een geldig XLSX-bestand van maximaal 5 MB en een dataset.',
+        'Gebruik een geldig XLSX-, EML- of PAY.-PDF-bestand van maximaal 5 MB en een dataset.',
       );
     const original = Buffer.from(body.content, 'base64');
     if (!original.length || original.length > 5_000_000)
@@ -58,6 +61,9 @@ export class WorkbookImports {
         asOf: body.asOf,
         scopeConfirmed: body.scopeConfirmed,
         filename: body.filename,
+        from: body.from,
+        through: body.through,
+        periodConfirmed: body.periodConfirmed,
       });
       if (body.expectedKind && report.kind !== body.expectedKind) {
         report = null;
@@ -81,9 +87,11 @@ export class WorkbookImports {
     const context = report
       ? report.kind === 'members'
         ? { kind: report.kind, locationId, asOf: report.period }
-        : report.kind === 'finance'
-          ? { kind: report.kind, locationId }
-          : { kind: report.kind }
+        : report.kind === 'payments'
+          ? { kind: report.kind, locationId, period: report.period }
+          : report.kind === 'finance'
+            ? { kind: report.kind, locationId }
+            : { kind: report.kind }
       : {
           locationId: body.locationId ?? null,
           asOf: body.asOf ?? null,

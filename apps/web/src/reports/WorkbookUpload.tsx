@@ -8,6 +8,7 @@ const kinds = {
   finance: 'Omzet',
   forecast: 'Dewi forecast',
   healthplanner: 'Healthplanner',
+  payments: 'PAY. betalingenoverzicht',
 };
 export function WorkbookUpload({
   data,

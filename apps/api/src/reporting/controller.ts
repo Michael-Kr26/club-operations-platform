@@ -314,6 +314,16 @@ export class ReportsController {
       body,
     );
   }
+  @Post('workbooks/inbox/confirm-pdf') async confirmInboxPdf(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Body() body: Parameters<ReportingService['confirmInboxPdf']>[1],
+  ) {
+    return this.reports.confirmInboxPdf(
+      await this.access(req, org, true),
+      body,
+    );
+  }
   @Post('workbooks/local-file') async scanLocalWorkbookFile(
     @Req() req: FastifyRequest,
     @Param('organizationId') org: string,

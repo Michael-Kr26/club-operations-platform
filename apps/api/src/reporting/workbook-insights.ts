@@ -91,7 +91,8 @@ export function supplementChanges(
     if (
       !report ||
       report.kind === 'forecast' ||
-      report.kind === 'healthplanner'
+      report.kind === 'healthplanner' ||
+      report.kind === 'payments'
     )
       continue;
     let previous: ForecastImport | undefined,

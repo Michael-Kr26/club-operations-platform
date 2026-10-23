@@ -177,7 +177,7 @@ describe('vast lokaal Healthplanner-bestand', () => {
       inbox
         .status(sportSociety.id, 'real', true)
         .files.find((file) => file.filename.endsWith('.pdf'))?.status,
-    ).toBe('unsupported');
+    ).toBe('rejected');
   });
   it('wacht op recente writes en volgt geen symlink', async () => {
     const path = join(directory, 'writing.xlsx');

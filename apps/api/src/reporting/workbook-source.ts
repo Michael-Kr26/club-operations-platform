@@ -1,3 +1,4 @@
+import { parsePaymentPdf } from './payment-pdf.js';
 import ExcelJS from 'exceljs';
 import type {
   ReportOrganization,
@@ -14,6 +15,9 @@ type Context = {
   asOf?: string;
   scopeConfirmed?: boolean;
   filename?: string;
+  from?: string;
+  through?: string;
+  periodConfirmed?: boolean;
 };
 export class WorkbookContextError extends Error {
   constructor(
@@ -65,6 +69,7 @@ export async function parseWorkbook(
   org: ReportOrganization,
   c: Context,
 ): Promise<WorkbookReport> {
+  if (/\.pdf$/i.test(c.filename ?? '')) return parsePaymentPdf(bytes, org, c);
   if (/\.eml$/i.test(c.filename ?? '')) {
     const parsed = await parseHealthplannerMail(bytes, org);
     return {

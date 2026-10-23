@@ -352,9 +352,11 @@ export function WorkbookOverview({
                 <h3>
                   {r.kind === 'forecast'
                     ? 'Dewi ledenontwikkeling'
-                    : r.kind === 'members'
-                      ? 'Dewi ledenexport'
-                      : 'Omzet kasstelsel'}
+                    : r.kind === 'payments'
+                      ? 'PAY. betalingenoverzicht'
+                      : r.kind === 'members'
+                        ? 'Dewi ledenexport'
+                        : 'Omzet kasstelsel'}
                 </h3>
                 <p>
                   {r.kind === 'forecast' ? `Export ${r.exportedOn}` : r.period}

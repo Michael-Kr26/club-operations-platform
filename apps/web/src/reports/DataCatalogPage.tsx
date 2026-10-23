@@ -251,7 +251,7 @@ export function DataCatalogPage() {
                     </details>
                     {entry.route && (
                       <Link
-                        to={`${workspace}/rapportages${entry.route === 'files' ? '/excel' : ''}?dataset=${dataset}`}
+                        to={`${workspace}/rapportages${entry.route === 'files' ? '/excel' : ''}?dataset=${dataset}${entry.id === 'finance-pdf' ? '#payment-pdf-import' : ''}`}
                       >
                         {entry.route === 'files'
                           ? 'Bestand aanleveren'
