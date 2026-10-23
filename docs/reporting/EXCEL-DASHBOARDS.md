@@ -116,15 +116,15 @@ ZIP-uitbreiding gecontroleerd op 18 oktober 2026: 91 tests (68 API, 23 web), Typ
 Bij `pnpm.cmd dev:local` gebruikt Sport Society standaard het bestand:
 
 ```text
-C:\Users\mssyt\OneDrive\Documenten\Werkdocumenten\SportSociety\Taken\AOM Taken\Healthplanner_leden_updates.xlsx
+C:\dev\ClubOperationsPlatform\imports\Healthplanner_leden_updates.xlsx
 ```
 
-Het pad wordt opgebouwd vanuit de huidige Windows-gebruikersmap; op Michaels laptop is dat `C:\Users\mssyt`. COP controleert dit alleen lokaal, bij opstart en daarna maximaal eenmaal per minuut. Gewijzigde inhoud wordt als Werkelijk geïmporteerd, met de club- en week-/maandperioden uit de bestaande Healthplanner-updatetabel. Het download- of wijzigingsmoment wordt nooit als rapportageperiode gebruikt. Dezelfde inhoud wordt ook na herstart niet dubbel opgeslagen. Een ontbrekend, vergrendeld, nog geschreven of ongeldig bestand vervangt geen eerder geldige gegevens. De bronstatus en **Nu ophalen** staan boven het grafische dashboard (`/rapportages/excel`), zichtbaar voor organisatiebeheerders. OneDrive moet het bestand op dit apparaat beschikbaar hebben.
+Het pad wordt opgebouwd vanuit de projectmap, onafhankelijk van de huidige terminalmap. Op Michaels laptop is de projectmap `C:\dev\ClubOperationsPlatform`. Kopieer de bestaande Healthplanner-updatetabel eenmalig naar `imports\Healthplanner_leden_updates.xlsx`; er worden geen bestaande bestanden verplaatst of verwijderd. COP controleert dit alleen lokaal, bij opstart en daarna maximaal eenmaal per minuut. Gewijzigde inhoud wordt als Werkelijk geïmporteerd, met de club- en week-/maandperioden uit de bestaande Healthplanner-updatetabel. Het download- of wijzigingsmoment wordt nooit als rapportageperiode gebruikt. Dezelfde inhoud wordt ook na herstart niet dubbel opgeslagen. Een ontbrekend, vergrendeld, nog geschreven of ongeldig bestand vervangt geen eerder geldige gegevens. De bronstatus en **Nu ophalen** staan boven het grafische dashboard (`/rapportages/excel`), zichtbaar voor organisatiebeheerders. De standaardmap staat lokaal buiten OneDrive.
 
 Voor andere gedownloade Dewi- en Healthplanner-rapportages staat de standaard importmap naast dat bestand:
 
 ```text
-C:\Users\mssyt\OneDrive\Documenten\Werkdocumenten\SportSociety\Taken\AOM Taken\COP imports
+C:\dev\ClubOperationsPlatform\imports
 ```
 
 Bewaar downloads zelf in die map (bijvoorbeeld met **Opslaan als** in de browser). COP opent de websites of mailboxen niet zelf. De map wordt lokaal aangemaakt bij de eerste controle en ongeveer iedere 30 seconden bekeken, maximaal drie gewijzigde bestanden per scan. ZIP/XLSX/EML wordt volgens de bestaande adapters verwerkt; onvoltooide downloads en Excel-lockbestanden worden niet geïmporteerd. Originelen blijven staan. Er wordt geen algemene Downloads-map doorzocht.
@@ -135,4 +135,6 @@ Healthplanner-EML, Healthplanner-updatetabellen en herkenbare Dewi-forecasts kun
 
 Het Healthplanner-bronpad en de importmap kunnen serverzijdig worden overschreven met `COP_HEALTHPLANNER_FILE` en `COP_IMPORT_FOLDER`. Voor een andere organisatie zijn er `COP_HEALTHPLANNER_ORGANIZATION` en `COP_IMPORT_ORGANIZATION`. Een lege `COP_HEALTHPLANNER_FILE` schakelt de vaste bron uit; de map kan via het dashboard worden uitgeschakeld. Buiten de lokale PGlite-start op loopback blijven beide lokale bronnen uit. Padkeuzes kunnen niet via een browserverzoek worden opgegeven.
 
-COP moet draaien om op te halen. Bestanden die tijdens uitgeschakelde COP zijn opgeslagen, worden bij de volgende start gecontroleerd. Er wordt hiermee geen echte mailverzending ingeschakeld. Deze bronroutes zijn getest met synthetische bestanden; Michaels fysieke OneDrive-bestand wordt pas op zijn laptop gelezen na ophalen en starten van deze versie.
+COP moet draaien om op te halen. Bestanden die tijdens uitgeschakelde COP zijn opgeslagen, worden bij de volgende start gecontroleerd. Er wordt hiermee geen echte mailverzending ingeschakeld. Deze bronroutes zijn getest met synthetische bestanden; De lokale kopie van Michaels bestand wordt pas op zijn laptop gelezen na ophalen en starten van deze versie.
+
+De lokale map `/imports/` is uitgesloten van Git zodat rapportages en persoonsgegevens niet worden meegecommit. Bewaar back-ups van deze map samen met de lokale COP-database.

@@ -33,3 +33,6 @@ Thumbs.db
 tmp/
 .cop/
 *.pgdump
+
+# Local source reports (may contain personal data)
+/imports/

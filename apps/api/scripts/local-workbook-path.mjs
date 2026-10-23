@@ -1,28 +1,21 @@
-import { homedir } from 'node:os';
-import { win32 } from 'node:path';
+import { posix, win32 } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-export function defaultHealthplannerFile(
-  platform = process.platform,
-  home = homedir(),
-) {
-  return platform === 'win32'
-    ? win32.join(
-        home,
-        'OneDrive',
-        'Documenten',
-        'Werkdocumenten',
-        'SportSociety',
-        'Taken',
-        'AOM Taken',
-        'Healthplanner_leden_updates.xlsx',
-      )
-    : '';
-}
+const projectDirectory = fileURLToPath(new URL('../../../', import.meta.url));
 
 export function defaultImportFolder(
   platform = process.platform,
-  home = homedir(),
+  project = projectDirectory,
 ) {
-  const file = defaultHealthplannerFile(platform, home);
-  return file ? win32.join(win32.dirname(file), 'COP imports') : '';
+  return (platform === 'win32' ? win32 : posix).join(project, 'imports');
+}
+
+export function defaultHealthplannerFile(
+  platform = process.platform,
+  project = projectDirectory,
+) {
+  return (platform === 'win32' ? win32 : posix).join(
+    defaultImportFolder(platform, project),
+    'Healthplanner_leden_updates.xlsx',
+  );
 }

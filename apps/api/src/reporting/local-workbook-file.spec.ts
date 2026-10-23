@@ -58,25 +58,20 @@ async function put(path: string, bytes: Buffer) {
   await utimes(path, new Date(0), new Date(0));
 }
 describe('vast lokaal Healthplanner-bestand', () => {
-  it('kiest het opgegeven Windows-pad vanuit de eigen gebruikersmap', () => {
-    expect(defaultHealthplannerFile('win32', 'C:\\Users\\mssyt')).toBe(
-      'C:\\Users\\mssyt\\OneDrive\\Documenten\\Werkdocumenten\\SportSociety\\Taken\\AOM Taken\\Healthplanner_leden_updates.xlsx',
+  it('gebruikt de lokale projectmap op Windows en Linux', () => {
+    expect(defaultImportFolder('win32', 'C:/dev/ClubOperationsPlatform')).toBe(
+      String.raw`C:\dev\ClubOperationsPlatform\imports`,
     );
-    expect(defaultHealthplannerFile('linux', '/home/test')).toBe('');
-    expect(defaultImportFolder('win32', 'C:/Users/mssyt')).toBe(
-      'C:' +
-        String.fromCharCode(92) +
-        [
-          'Users',
-          'mssyt',
-          'OneDrive',
-          'Documenten',
-          'Werkdocumenten',
-          'SportSociety',
-          'Taken',
-          'AOM Taken',
-          'COP imports',
-        ].join(String.fromCharCode(92)),
+    expect(
+      defaultHealthplannerFile('win32', 'C:/dev/ClubOperationsPlatform'),
+    ).toBe(
+      String.raw`C:\dev\ClubOperationsPlatform\imports\Healthplanner_leden_updates.xlsx`,
+    );
+    expect(defaultImportFolder('linux', '/workspace/cop')).toBe(
+      '/workspace/cop/imports',
+    );
+    expect(defaultHealthplannerFile('linux', '/workspace/cop')).toBe(
+      '/workspace/cop/imports/Healthplanner_leden_updates.xlsx',
     );
   });
   it('importeert gewijzigd Excel met bronperioden en voorkomt dubbeltelling na herstart', async () => {

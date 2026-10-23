@@ -144,10 +144,10 @@ export class LocalWorkbookFile {
       const code = (error as NodeJS.ErrnoException).code;
       this.state.message =
         code === 'ENOENT'
-          ? 'Bronbestand niet gevonden. Controleer het pad en of OneDrive dit bestand op dit apparaat beschikbaar heeft.'
+          ? 'Bronbestand niet gevonden. Zet het Excel-bestand op het getoonde lokale pad.'
           : error instanceof Error && error.message === 'size'
             ? 'Gebruik een regulier XLSX-bestand van maximaal 5 MB.'
-            : 'Bronbestand tijdelijk niet leesbaar of in gebruik. Controleer OneDrive, Excel en bestandsrechten. Eerdere gegevens blijven beschikbaar.';
+            : 'Bronbestand tijdelijk niet leesbaar of in gebruik. Controleer Excel en bestandsrechten. Eerdere gegevens blijven beschikbaar.';
     } finally {
       this.running = false;
     }
