@@ -586,6 +586,13 @@ export function WorkbookDashboard() {
       )}
       {access.data && !access.error && (
         <>
+          <p>
+            <Link
+              to={`${organizationSlug ? `/organisaties/${encodeURIComponent(org)}` : ''}/gegevens?dataset=${dataset}`}
+            >
+              Welke gegevens kan ik aanleveren? Bekijk Gegevens & imports →
+            </Link>
+          </p>
           {manage && data.data?.localFile && (
             <LocalWorkbookSource
               source={data.data.localFile}

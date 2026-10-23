@@ -32,9 +32,9 @@ export function LocalImportFolder({
       <span className="panel__eyebrow">Dewi & Healthplanner</span>
       <h2>Downloaden → opslaan → dashboard</h2>
       <p>
-        Sla ondersteunde XLSX-, EML- of ZIP-rapportages op in deze map. COP
-        controleert de map ongeveer elke 30 seconden zolang het draait en
-        bewaart de originelen.
+        Sla ondersteunde XLSX-, EML- of ZIP-rapportages op in deze map of in
+        submappen zoals Omzet/Achterveld. COP controleert de map ongeveer elke
+        30 seconden zolang het draait en bewaart de originelen.
       </p>
       <p style={{ overflowWrap: 'anywhere' }}>
         <code>{inbox.path}</code>

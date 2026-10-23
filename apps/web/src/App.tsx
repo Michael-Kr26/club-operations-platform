@@ -1,3 +1,4 @@
+import { DataCatalogPage } from './reports/DataCatalogPage';
 import { InventoryPage } from './operations/InventoryPage';
 import { ImplementationPage } from './pages/ImplementationPage';
 import type { UserRole } from './auth/types';
@@ -149,6 +150,7 @@ const managementNavigation: Array<{
 }> = [
   { icon: 'building', label: 'Locaties', to: '/locaties' },
   { icon: 'activity', label: 'Rapportages', to: '/rapportages' },
+  { icon: 'clipboard', label: 'Gegevens & imports', to: '/gegevens' },
   { icon: 'clipboard', label: 'Implementatie', to: '/implementatie' },
 ];
 
@@ -347,6 +349,11 @@ export function App() {
 
         <div className="content">
           <Routes>
+            <Route path="/gegevens" element={<DataCatalogPage />} />
+            <Route
+              path="/organisaties/:organizationSlug/gegevens"
+              element={<DataCatalogPage />}
+            />
             <Route path="/voorraad" element={<InventoryPage />} />
             <Route
               path="/organisaties/:organizationSlug/voorraad"

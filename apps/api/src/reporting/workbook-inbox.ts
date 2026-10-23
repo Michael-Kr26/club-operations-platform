@@ -98,6 +98,28 @@ export class WorkbookInbox {
       this.running.delete(key);
     }
   }
+  private async discover(root: string) {
+    const files: { name: string }[] = [];
+    let examined = 0;
+    const walk = async (relative: string, depth: number) => {
+      for (const entry of await readdir(join(root, relative), {
+        withFileTypes: true,
+      })) {
+        if (++examined > 1000 || files.length >= 500)
+          throw new Error('Te veel bestanden.');
+        if (entry.isSymbolicLink() || entry.name.startsWith('~$')) continue;
+        const name = relative ? `${relative}/${entry.name}` : entry.name;
+        if (entry.isDirectory() && depth < 2) await walk(name, depth + 1);
+        else if (
+          entry.isFile() &&
+          /\.(zip|xlsx|eml|pdf|xls|csv)$/i.test(entry.name)
+        )
+          files.push({ name });
+      }
+    };
+    await walk('', 0);
+    return files;
+  }
   private async scanFiles(
     org: ReportOrganization,
     dataset: Dataset,
@@ -113,17 +135,10 @@ export class WorkbookInbox {
     state.error = null;
     try {
       await this.enable(org.id, dataset);
-      const files = (await readdir(path, { withFileTypes: true })).filter(
-        (f) =>
-          f.isFile() &&
-          !f.name.startsWith('~$') &&
-          !f.isSymbolicLink() &&
-          /\.(zip|xlsx|eml)$/i.test(f.name),
+      const files = await this.discover(path);
+      state.files = state.files.filter((file) =>
+        files.some((current) => current.name === file.filename),
       );
-      if (files.length > 500)
-        throw new Error(
-          'Te veel bestanden. Houd maximaal 500 bronbestanden in de importmap.',
-        );
       let processed = 0;
       for (const file of files.sort((a, b) => a.name.localeCompare(b.name))) {
         const filename = file.name,
@@ -135,6 +150,19 @@ export class WorkbookInbox {
           now.getTime() - stat.mtimeMs < 3000
         )
           continue;
+        if (/\.(pdf|xls|csv)$/i.test(filename)) {
+          state.files = [
+            {
+              filename,
+              status: 'unsupported',
+              message: /\.pdf$/i.test(filename)
+                ? 'PDF gevonden, maar de omzetinhoud is nog niet verwerkt. Een voorbeeld-PDF is nodig voor een betrouwbare importadapter.'
+                : 'Bestand gevonden; deze mapimport ondersteunt dit formaat nog niet. Gebruik de passende standaardimport of lever een voorbeeldbestand aan.',
+            },
+            ...state.files.filter((file) => file.filename !== filename),
+          ].slice(0, 100);
+          continue;
+        }
         const sidecar = full + '.cop.json';
         let metadataStamp = 'none';
         try {

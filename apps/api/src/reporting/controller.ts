@@ -232,6 +232,13 @@ export class ReportsController {
   ) {
     return this.reports.updateSettings(await this.access(req, org, true), body);
   }
+  @Get('data-catalog') async dataCatalog(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+    @Query('dataset') dataset: Dataset = 'real',
+  ) {
+    return this.reports.dataCatalog(await this.access(req, org), dataset);
+  }
   @Get('imports') async imports(
     @Req() req: FastifyRequest,
     @Param('organizationId') org: string,

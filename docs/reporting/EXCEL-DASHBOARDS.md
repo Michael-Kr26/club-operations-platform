@@ -138,3 +138,23 @@ Het Healthplanner-bronpad en de importmap kunnen serverzijdig worden overschreve
 COP moet draaien om op te halen. Bestanden die tijdens uitgeschakelde COP zijn opgeslagen, worden bij de volgende start gecontroleerd. Er wordt hiermee geen echte mailverzending ingeschakeld. Deze bronroutes zijn getest met synthetische bestanden; De lokale kopie van Michaels bestand wordt pas op zijn laptop gelezen na ophalen en starten van deze versie.
 
 De lokale map `/imports/` is uitgesloten van Git zodat rapportages en persoonsgegevens niet worden meegecommit. Bewaar back-ups van deze map samen met de lokale COP-database.
+
+## Gegevens & imports: wat kun je aanleveren?
+
+Open `/gegevens` (of `/organisaties/:organizationSlug/gegevens`) via **Gegevens & imports** in het zijmenu. De API-route `GET /api/v1/organizations/:organizationId/reports/data-catalog?dataset=real|demo` controleert de opgeslagen werkboek- én standaardrapportage-imports. Rapportagerecht is vereist; tenant en toegankelijke clubs worden aan de serverkant begrensd. Het antwoord bevat alleen bronmetadata en velddekking, geen namen, e-mailadressen of individuele ledenregels.
+
+Categorieën: Bezoek, Omzet, Leden, Verkoop & afspraken, Lessen, Team & planning en Marketing. Per gegevenssoort zie je het ondersteunde formaat, benodigde invoer, beperkingen en status per club: **Aangeleverd**, **Deels aangeleverd**, **Nog aanleveren** of **Import nog te bouwen**. Filters op categorie, club, status en Werkelijk/Demo helpen bij het verzamelen. De status ververst elke 30 seconden en met **Status vernieuwen**.
+
+Een geaccepteerd bestand met lege relevante cellen is geen bewijs dat die cijfers beschikbaar zijn. Nul is wel een waarde. Afgekeurde imports en andere datasets tellen niet mee. Binnen de nieuwste relevante import wordt de laatste ingevulde bronperiode gekozen; ontbrekende velden worden niet uit een ouder bestand teruggevuld. De periode en importdatum staan erbij. **Aangeleverd** bewijst geen actuele of ononderbroken historie, geen volledige periode en geen actieve API-koppeling. Een standaardimport waarvan de volledigheid niet is bevestigd krijgt maximaal gedeeltelijke dekking. Een financiële import met alleen omzet bewijst geen ontvangen betalingen of debiteurenstanden; een forecast bewijst geen volledige abonnementshistorie.
+
+### Submappen en omzet-PDF’s
+
+De importmap scant maximaal twee submapniveaus, bijvoorbeeld:
+
+```text
+imports/Omzet/Achterveld/rapport.pdf
+```
+
+PDF, oude XLS en CSV in de importmap worden als gevonden maar nog niet verwerkbaar zichtbaar bij de bestandsstatus en bovenaan Gegevens & imports (voor organisatiebeheerders). Er worden geen bedragen uit zulke bestanden gehaald en ze tellen niet als aangeleverde cijfers. Ondersteunde XLSX/EML/ZIP wordt ook in deze submappen verwerkt. De submapnaam wordt niet stilzwijgend gebruikt als bevestiging van de club of peildatum. Gebruik de bestaande uploadcontrole wanneer een ondersteund bestand deze context mist. Symlinks en Excel-lockbestanden worden overgeslagen; maximaal 500 bronbestanden / 1.000 onderzochte mapvermeldingen per controle. Verwijderde bestanden verdwijnen bij de volgende scan uit de lijst gevonden bestanden; eerder geïmporteerde originelen blijven in de database.
+
+Voor omzet-PDF is eerst één representatief voorbeeld nodig om bronperiode, bedragen, btw en eventuele clubvermelding betrouwbaar te valideren. Een lokale Windows-padvermelding maakt de PDF niet leesbaar voor de ontwikkelomgeving. Deze adapter is in het overzicht expliciet als **Import nog te bouwen** gemarkeerd.

@@ -1,3 +1,4 @@
+import { mkdir } from 'node:fs/promises';
 import { WorkbookInbox } from './workbook-inbox.js';
 import {
   afterAll,
@@ -159,12 +160,24 @@ describe('vast lokaal Healthplanner-bestand', () => {
     await imports.preferences.inbox(sportSociety.id, 'real', 'fixture', true);
     await put(join(folder, '~$Healthplanner.xlsx'), Buffer.from('Excel lock'));
     await put(join(folder, 'download.xlsx'), await healthplannerFixture());
+    await mkdir(join(folder, 'Omzet', 'Achterveld'), { recursive: true });
+    await put(
+      join(folder, 'Omzet', 'Achterveld', 'omzet.pdf'),
+      Buffer.from('%PDF-test'),
+    );
     await inbox.scan(sportSociety, 'real', now);
     expect(
       inbox
         .status(sportSociety.id, 'real', true)
         .files.map((file) => file.filename),
-    ).toEqual(['download.xlsx']);
+    ).toEqual(
+      expect.arrayContaining(['download.xlsx', 'Omzet/Achterveld/omzet.pdf']),
+    );
+    expect(
+      inbox
+        .status(sportSociety.id, 'real', true)
+        .files.find((file) => file.filename.endsWith('.pdf'))?.status,
+    ).toBe('unsupported');
   });
   it('wacht op recente writes en volgt geen symlink', async () => {
     const path = join(directory, 'writing.xlsx');

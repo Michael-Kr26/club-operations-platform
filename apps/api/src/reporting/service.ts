@@ -1,3 +1,4 @@
+import { dataCatalog } from './data-catalog.js';
 import { LocalWorkbookFile } from './local-workbook-file.js';
 import {
   BadRequestException,
@@ -707,6 +708,37 @@ export class ReportingService implements OnModuleInit, OnModuleDestroy {
         webUrl: WEB_ORIGIN,
       },
     );
+  }
+  async dataCatalog(principal: Principal, dataset: Dataset) {
+    requirePermission(principal, principal.organizationId, 'reports.read');
+    if (!['real', 'demo'].includes(dataset))
+      throw new BadRequestException('Ongeldige dataset.');
+    const organization = scopedOrganization(
+      await this.organization(principal.organizationId),
+      principal,
+    );
+    const [workbooks, imports] = await Promise.all([
+      this.workbooks.list(principal, dataset),
+      this.store.imports(principal.organizationId, dataset),
+    ]);
+    const result = dataCatalog(organization, dataset, workbooks, imports);
+    if (
+      principal.locations === null &&
+      principal.permissions.includes('reports.manage')
+    ) {
+      const preferences = await this.workbooks.preferences.read(
+        principal.organizationId,
+        dataset,
+      );
+      result.unprocessedFiles = this.workbookInbox
+        .status(
+          principal.organizationId,
+          dataset,
+          preferences.inboxEnabled === true,
+        )
+        .files.filter((file) => file.status !== 'accepted');
+    }
+    return result;
   }
   async workbookDashboard(principal: Principal, dataset: Dataset) {
     requirePermission(principal, principal.organizationId, 'reports.read');
