@@ -14,6 +14,16 @@ De bijbehorende `rooster-voorstellen.fragment.html` bevat drie originele COP-ont
 
 Voorkeur: het Weekoverzicht voor de planner, gecombineerd met de mobiele startpagina van Dienstkaarten. De keuze staat nog open. Blauw blijft de hoofdkleur; oranje markeert open diensten. Licht en donker volgen de weergave van de gebruiker.
 
+## Diensttypen
+
+Elke dienst krijgt een apart diensttype: **Allround**, **Gastheer** of **Clubmanager**. De planner kiest dit bij het aanmaken; het type staat vervolgens in het weekrooster, de dienstkaarten, de dienstdetails en de mobiele agenda. Het bezettingsoverzicht groepeert diensten per diensttype. Activiteiten, zoals Receptie, Fitness en Clubbeheer, blijven afzonderlijk herkenbaar. Het type hoort bij de dienst en bepaalt geen toegangsrechten van een account.
+
+De voorbeeldplanning bewaart het gekozen type samen met de medewerker en de tijden. Eerder bewaarde voorbeelden zonder type krijgen Allround als standaard. In de definitieve implementatie moet het diensttype eveneens worden opgeslagen en doorgegeven aan de medewerkersomgeving.
+
+## Vervolgvolgorde
+
+Eerst het rooster afronden, inclusief diensttypen en de mobiele medewerkersomgeving. Daarna samen de navigatie herzien, zoals Michael heeft gevraagd. De navigatie wordt bij deze ontwerpaanpassing nog niet verbouwd.
+
 ## Mobiele functies
 
 De voorstellen demonstreren eigen diensten openen, beschikbaarheid per dag wijzigen, interesse in een open dienst doorgeven en een wissel aanvragen. Elke actie werkt met tikken; slepen is optioneel voor de planner. In de voorbeelden blijven aanvragen in behandeling totdat de planner bevestigt. Bij kleine schermen verschijnt automatisch de medewerkersweergave. Op de smalste schermen breekt de dagkiezer over meerdere regels af.

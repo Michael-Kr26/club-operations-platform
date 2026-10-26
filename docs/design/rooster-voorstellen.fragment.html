@@ -367,6 +367,17 @@
     font-weight: 650;
     white-space: nowrap;
   }
+  #cop-roster-concepts .cop-shift-type {
+    display: block;
+    font-size: 13px;
+    font-weight: 650;
+    margin: 3px 0;
+    overflow-wrap: anywhere;
+  }
+  #cop-roster-concepts .cop-shift .cop-shift-type {
+    font-size: 11px;
+    margin: 0;
+  }
   #cop-roster-concepts .cop-add {
     width: 100%;
     min-height: 48px;
@@ -758,6 +769,7 @@
   (() => {
     const root = document.getElementById('cop-roster-concepts');
     const names = ['Noor', 'Sam', 'Lisa', 'Daan'];
+    const shiftTypes = ['Allround', 'Gastheer', 'Clubmanager'];
     const initial = {
       week: {
         view: 'manager',
@@ -791,9 +803,27 @@
     const days = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
     const dates = ['26', '27', '28', '29', '30', '31', '1'];
     const own = [
-      { day: 0, time: '09:00–15:00', role: 'Receptie', site: 'Barneveld' },
-      { day: 2, time: '15:00–21:00', role: 'Fitness', site: 'Barneveld' },
-      { day: 4, time: '09:00–15:00', role: 'Receptie', site: 'Ede' },
+      {
+        day: 0,
+        time: '09:00–15:00',
+        role: 'Receptie',
+        site: 'Barneveld',
+        shiftType: 'Gastheer',
+      },
+      {
+        day: 2,
+        time: '15:00–21:00',
+        role: 'Fitness',
+        site: 'Barneveld',
+        shiftType: 'Allround',
+      },
+      {
+        day: 4,
+        time: '09:00–15:00',
+        role: 'Clubbeheer',
+        site: 'Ede',
+        shiftType: 'Clubmanager',
+      },
     ];
     function restore(value) {
       if (!value || !value.privateContent || !value.privateContent.concepts)
@@ -820,6 +850,7 @@
           modelContent: {
             ontwerpen: ['Weekoverzicht', 'Dienstkaarten', 'Bezetting'],
             mobiel: 'Eigen rooster, beschikbaarheid en open diensten',
+            diensttypen: shiftTypes,
             actieveWeergaven: Object.fromEntries(
               Object.entries(states).map(([k, s]) => [k, s.view]),
             ),
@@ -851,10 +882,10 @@
       return `<div class="cop-days" aria-label="Dag kiezen">${days.map((d, i) => `<button data-day="${i}" aria-pressed="${s.day === i}">${d}<strong>${dates[i]}</strong></button>`).join('')}</div>`;
     }
     function header(layout) {
-      return `<div class="cop-top"><div><h2>${layout === 'coverage' ? 'Bezetting per functie' : 'Rooster'}</h2><p class="cop-sub">Barneveld · 26 oktober – 1 november 2026</p></div><button class="cop-button cop-primary" data-publish>Publiceren</button></div><div class="cop-controls"><span class="cop-button">Barneveld</span><span class="cop-tag">Concept</span><small>Voorbeeld · wijzigingen blijven in dit ontwerp</small></div>`;
+      return `<div class="cop-top"><div><h2>${layout === 'coverage' ? 'Bezetting per diensttype' : 'Rooster'}</h2><p class="cop-sub">Barneveld · 26 oktober – 1 november 2026</p></div><button class="cop-button cop-primary" data-publish>Publiceren</button></div><div class="cop-controls"><span class="cop-button">Barneveld</span><span class="cop-tag">Concept</span><small>Voorbeeld · wijzigingen blijven in dit ontwerp</small></div>`;
     }
-    function cell(time, role) {
-      return `<button class="cop-shift" data-details="${time}|${role}"><strong>${time}</strong>${role}</button>`;
+    function cell(time, role, shiftType = 'Allround') {
+      return `<button class="cop-shift" data-details="${time}|${esc(role)}|Barneveld|${esc(shiftType)}"><strong>${time}</strong><span class="cop-shift-type">${esc(shiftType)}</span><span>${esc(role)}</span></button>`;
     }
     function week(s) {
       let html = `${pool(s)}<div class="cop-week" aria-label="Weekrooster"><div class="cop-cell cop-day">Medewerker</div>${days.map((d, i) => `<div class="cop-cell cop-day">${d}<strong>${dates[i]}</strong></div>`).join('')}`;
@@ -868,7 +899,7 @@
         html += `<div class="cop-cell cop-name">${name}<small>${[18, 12, 16, 8][r]} / ${[24, 24, 20, 16][r]} uur</small></div>`;
         days.forEach((_, d) => {
           const added = s.added.find((x) => x.person === name && x.day === d);
-          html += `<div class="cop-cell" data-drop="${d}" data-target="${name}">${added ? cell(esc(added.time), 'Receptie') : shifts[r].includes(d) ? cell(r % 2 ? '15:00–21:00' : '09:00–15:00', r % 2 ? 'Fitness' : 'Receptie') : `<button class="cop-add" data-plan="${d}" data-target="${name}" aria-label="Dienst voor ${name} op ${days[d]} ${dates[d]} plannen">+</button>`}</div>`;
+          html += `<div class="cop-cell" data-drop="${d}" data-target="${name}">${added ? cell(esc(added.time), added.role || 'Receptie', added.shiftType || 'Allround') : shifts[r].includes(d) ? cell(r % 2 ? '15:00–21:00' : '09:00–15:00', r === 3 ? 'Clubbeheer' : r % 2 ? 'Fitness' : 'Receptie', r === 3 ? 'Clubmanager' : r % 2 ? 'Allround' : 'Gastheer') : `<button class="cop-add" data-plan="${d}" data-target="${name}" aria-label="Dienst voor ${name} op ${days[d]} ${dates[d]} plannen">+</button>`}</div>`;
         });
       });
       return (
@@ -880,32 +911,41 @@
       return `${pool(s)}<div class="cop-board">${[0, 1, 2]
         .map((off) => {
           const d = (s.day + off) % 7;
-          return `<div class="cop-lane" data-drop="${d}"><h3>${days[d]} ${dates[d]} oktober</h3><div class="cop-shift-card"><strong>09:00–15:00</strong><p class="cop-sub">Receptie</p><div class="cop-shift-person"><span class="cop-avatar">N</span>Noor</div><button class="cop-button" data-details="09:00–15:00|Receptie">Dienst bekijken</button></div>${s.added
+          return `<div class="cop-lane" data-drop="${d}"><h3>${days[d]} ${dates[d]} oktober</h3><div class="cop-shift-card"><strong>09:00–15:00</strong><span class="cop-shift-type">Gastheer</span><p class="cop-sub">Receptie</p><div class="cop-shift-person"><span class="cop-avatar">N</span>Noor</div><button class="cop-button" data-details="09:00–15:00|Receptie|Barneveld|Gastheer">Dienst bekijken</button></div>${s.added
             .filter((x) => x.day === d)
             .map(
               (x) =>
-                `<div class="cop-shift-card"><strong>${esc(x.time)}</strong><p class="cop-sub">Receptie · ${esc(x.person)}</p></div>`,
+                `<div class="cop-shift-card"><strong>${esc(x.time)}</strong><span class="cop-shift-type">${esc(x.shiftType || 'Allround')}</span><p class="cop-sub">${esc(x.role || 'Fitness')} · ${esc(x.person)}</p><button class="cop-button" data-details="${esc(x.time)}|${esc(x.role || 'Fitness')}|Barneveld|${esc(x.shiftType || 'Allround')}">Dienst bekijken</button></div>`,
             )
             .join(
               '',
-            )}<div class="cop-shift-card cop-open"><strong>15:00–21:00</strong><p>Fitness · nog invullen</p><button class="cop-button" data-plan="${d}">${esc(s.person)} inplannen</button></div></div>`;
+            )}<div class="cop-shift-card cop-open"><strong>15:00–21:00</strong><span class="cop-shift-type">Allround</span><p>Fitness · nog invullen</p><button class="cop-button" data-plan="${d}" data-role="Fitness" data-shift-type="Allround">${esc(s.person)} inplannen</button></div></div>`;
         })
         .join('')}</div>`;
     }
     function coverage(s) {
-      return `${dayPicker(s)}<div class="cop-coverage-layout"><div>${['Receptie', 'Fitness', 'Groepslessen'].map((role, i) => `<div class="cop-requirement" data-drop="${s.day}"><div class="cop-requirement-head"><h3>${role}</h3><span class="cop-tag ${i === 1 ? 'cop-open' : ''}">${i === 1 ? '1 van 2 ingevuld' : 'Volledig bezet'}</span></div><div class="cop-slot"><span><strong>${['09:00–15:00', '09:00–15:00', '18:00–20:00'][i]}</strong><br>${['Noor', 'Lisa', 'Daan'][i]}</span><button class="cop-button" data-details="09:00–15:00|${role}">Details</button></div>${i === 1 ? `<div class="cop-slot"><span><strong>15:00–21:00</strong><br>${s.added.some((x) => x.day === s.day) ? esc(s.added.find((x) => x.day === s.day).person) : 'Open dienst'}</span><button class="cop-button cop-primary" data-plan="${s.day}">${esc(s.person)} inplannen</button></div>` : ''}</div>`).join('')}</div>${pool(s)}</div>`;
+      return `${dayPicker(s)}<div class="cop-coverage-layout"><div>${shiftTypes
+        .map((shiftType, i) => {
+          const role = ['Fitness', 'Receptie', 'Clubbeheer'][i];
+          const assigned = s.added.find(
+            (x) => x.day === s.day && (x.shiftType || 'Allround') === shiftType,
+          );
+          const time = ['09:00–15:00', '09:00–15:00', '18:00–20:00'][i];
+          return `<div class="cop-requirement" data-drop="${s.day}" data-role="${role}" data-shift-type="${shiftType}"><div class="cop-requirement-head"><h3>${shiftType}</h3><span class="cop-tag ${i === 0 && !assigned ? 'cop-open' : ''}">${i === 0 && !assigned ? '1 van 2 ingevuld' : 'Volledig bezet'}</span></div><p class="cop-sub">Activiteit · ${role}</p><div class="cop-slot"><span><strong>${time}</strong><br>${['Lisa', 'Noor', 'Daan'][i]}</span><button class="cop-button" data-details="${time}|${role}|Barneveld|${shiftType}">Details</button></div>${i === 0 ? `<div class="cop-slot"><span><strong>${assigned ? esc(assigned.time) : '15:00–21:00'}</strong><br>${assigned ? esc(assigned.person) : 'Open dienst'}</span>${assigned ? `<button class="cop-button" data-details="${esc(assigned.time)}|${role}|Barneveld|${shiftType}">Details</button>` : `<button class="cop-button cop-primary" data-plan="${s.day}" data-role="${role}" data-shift-type="${shiftType}">${esc(s.person)} inplannen</button>`}</div>` : ''}</div>`;
+        })
+        .join('')}</div>${pool(s)}</div>`;
     }
     function agendaItem(x) {
-      return `<div class="cop-agenda"><div class="cop-date">${days[x.day]}<strong>${dates[x.day]}</strong></div><div class="cop-agenda-main"><button data-details="${x.time}|${x.role}|${x.site}"><strong>${x.time}</strong><small>${x.role} · ${x.site}</small></button><span class="cop-tag">Gepubliceerd</span></div></div>`;
+      return `<div class="cop-agenda"><div class="cop-date">${days[x.day]}<strong>${dates[x.day]}</strong></div><div class="cop-agenda-main"><button data-details="${x.time}|${x.role}|${x.site}|${x.shiftType}"><strong>${x.time}</strong><span class="cop-shift-type">${x.shiftType}</span><small>${x.role} · ${x.site}</small></button><span class="cop-tag">Gepubliceerd</span></div></div>`;
     }
     function employee(layout, s) {
       let content = '';
       if (s.tab === 'availability') {
         content = `<h3>Mijn beschikbaarheid</h3><p class="cop-sub">Week van 26 oktober · hele dagen</p>${days.map((d, i) => `<div class="cop-availability"><label><input type="checkbox" data-available="${i}" ${s.available[i] ? 'checked' : ''}>${d} ${dates[i]} ${i === 6 ? 'nov' : 'okt'}</label><small>${s.available[i] ? 'Beschikbaar' : 'Niet beschikbaar'}</small></div>`).join('')}<button class="cop-button cop-primary cop-full" data-save-availability>Beschikbaarheid doorgeven</button>`;
       } else if (s.tab === 'open') {
-        content = `<h3>Open diensten</h3><p class="cop-sub">Op jouw gekoppelde locaties</p><div class="cop-shift-card cop-open" style="margin-top:18px"><strong>Za 31 okt · 15:00–21:00</strong><p class="cop-sub">Fitness · Barneveld</p><button class="cop-button cop-primary" data-claim ${s.claimed ? 'disabled' : ''}>${s.claimed ? 'Aanvraag in behandeling' : 'Interesse doorgeven'}</button></div><p class="cop-note">De planner bevestigt wie de dienst krijgt.</p>`;
+        content = `<h3>Open diensten</h3><p class="cop-sub">Op jouw gekoppelde locaties</p><div class="cop-shift-card cop-open" style="margin-top:18px"><strong>Za 31 okt · 15:00–21:00</strong><span class="cop-shift-type">Allround</span><p class="cop-sub">Fitness · Barneveld</p><button class="cop-button cop-primary" data-claim ${s.claimed ? 'disabled' : ''}>${s.claimed ? 'Aanvraag in behandeling' : 'Interesse doorgeven'}</button></div><p class="cop-note">De planner bevestigt wie de dienst krijgt.</p>`;
       } else if (layout === 'cards') {
-        content = `<div class="cop-hero"><p>Je volgende dienst</p><strong>09:00–15:00</strong><p>Vandaag · Receptie</p><p class="cop-sub">Barneveld · gepubliceerd</p><button class="cop-button" data-details="09:00–15:00|Receptie|Barneveld">Bekijk dienst</button></div><h3>Daarna deze week</h3>${own.slice(1).map(agendaItem).join('')}`;
+        content = `<div class="cop-hero"><p>Je volgende dienst</p><strong>09:00–15:00</strong><span class="cop-shift-type">Gastheer</span><p>Vandaag · Receptie</p><p class="cop-sub">Barneveld · gepubliceerd</p><button class="cop-button" data-details="09:00–15:00|Receptie|Barneveld|Gastheer">Bekijk dienst</button></div><h3>Daarna deze week</h3>${own.slice(1).map(agendaItem).join('')}`;
       } else if (layout === 'coverage') {
         content = `${dayPicker(s)}<h3>${days[s.day]} ${dates[s.day]} ${s.day === 6 ? 'november' : 'oktober'}</h3>${
           own
@@ -972,10 +1012,10 @@
         type === 'plan' ? 'Dienst plannen' : 'Dienst bekijken',
       );
       if (type === 'plan') {
-        e.innerHTML = `<div><h3>Dienst plannen</h3><p class="cop-sub">${days[options.day]} ${dates[options.day]} oktober · Barneveld</p><label>Medewerker<select name="person">${names.map((n) => `<option ${n === (options.target || s.person) ? 'selected' : ''}>${n}</option>`).join('')}</select></label><label>Begintijd<input name="start" type="time" value="15:00" required></label><label>Eindtijd<input name="end" type="time" value="21:00" required></label><p class="cop-note">Voorbeeld · wijzigingen worden niet naar COP verstuurd.</p><div class="cop-sheet-actions"><button type="button" class="cop-button" data-close>Annuleren</button><button class="cop-button cop-primary" type="button" data-plan-save>Inplannen</button></div></div>`;
+        e.innerHTML = `<div><h3>Dienst plannen</h3><p class="cop-sub">${days[options.day]} ${dates[options.day]} ${options.day === 6 ? 'november' : 'oktober'} · Barneveld</p><label>Medewerker<select name="person">${names.map((n) => `<option ${n === (options.target || s.person) ? 'selected' : ''}>${n}</option>`).join('')}</select></label><label>Diensttype<select name="shiftType">${shiftTypes.map((type) => `<option ${type === (options.shiftType || 'Allround') ? 'selected' : ''}>${type}</option>`).join('')}</select></label><label>Begintijd<input name="start" type="time" value="15:00" required></label><label>Eindtijd<input name="end" type="time" value="21:00" required></label><p class="cop-note">Voorbeeld · wijzigingen worden niet naar COP verstuurd.</p><div class="cop-sheet-actions"><button type="button" class="cop-button" data-close>Annuleren</button><button class="cop-button cop-primary" type="button" data-plan-save>Inplannen</button></div></div>`;
         e.querySelector('[data-plan-save]').addEventListener('click', () => {
           const f = new Map(
-              ['person', 'start', 'end'].map((key) => [
+              ['person', 'shiftType', 'start', 'end'].map((key) => [
                 key,
                 e.querySelector('[name=' + key + ']').value,
               ]),
@@ -996,6 +1036,8 @@
             person: f.get('person'),
             day: options.day,
             time: start + '–' + end,
+            shiftType: f.get('shiftType'),
+            role: options.role || 'Receptie',
           });
           e.remove();
           render(section);
@@ -1003,10 +1045,11 @@
           notify(section, 'Voorbeeld: dienst ingepland.');
         });
       } else {
-        const [time, role, site = 'Barneveld'] = options.detail.split('|');
+        const [time, role, site = 'Barneveld', shiftType = 'Allround'] =
+          options.detail.split('|');
         const mobile =
           s.view === 'employee' || matchMedia('(max-width:600px)').matches;
-        e.innerHTML = `<h3>${esc(role)}</h3><p><strong>${esc(time)}</strong></p><p class="cop-sub">${esc(site)} · Gepubliceerd</p><p style="margin-top:20px">Meld je bij de receptie. De dienstinformatie staat hier bij elkaar.</p><div class="cop-sheet-actions"><button class="cop-button" data-close>Sluiten</button>${mobile ? '<button class="cop-button cop-primary" data-swap>Wissel aanvragen</button>' : ''}</div>`;
+        e.innerHTML = `<h3>${esc(shiftType)}</h3><p class="cop-sub">Activiteit · ${esc(role)}</p><p><strong>${esc(time)}</strong></p><p class="cop-sub">${esc(site)} · Gepubliceerd</p><p style="margin-top:20px">Meld je bij de receptie. De dienstinformatie staat hier bij elkaar.</p><div class="cop-sheet-actions"><button class="cop-button" data-close>Sluiten</button>${mobile ? '<button class="cop-button cop-primary" data-swap>Wissel aanvragen</button>' : ''}</div>`;
         e.querySelector('[data-swap]')?.addEventListener('click', () => {
           e.remove();
           notify(
@@ -1040,6 +1083,8 @@
           sheet(section, 'plan', {
             day: Number(b.dataset.plan),
             target: b.dataset.target,
+            shiftType: b.dataset.shiftType,
+            role: b.dataset.role,
           });
         } else if (b.dataset.details) {
           sheet(section, 'details', { detail: b.dataset.details });
@@ -1091,6 +1136,8 @@
         sheet(section, 'plan', {
           day: Number(cell.dataset.drop),
           target: person,
+          shiftType: cell.dataset.shiftType,
+          role: cell.dataset.role,
         });
       });
       if (globalThis.Tweak) {
