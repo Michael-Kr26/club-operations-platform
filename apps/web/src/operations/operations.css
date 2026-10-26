@@ -189,3 +189,118 @@
     padding: 8px;
   }
 }
+.operation-employee-pool {
+  border: 1px solid #d4e1f5;
+  border-radius: 14px;
+  padding: 20px;
+  background: #f5f8ff;
+}
+.operation-employee-pool p {
+  color: #52677f;
+  line-height: 1.6;
+}
+.operation-employee-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: 12px;
+}
+.operation-employee-card {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  text-align: left;
+  font: inherit;
+  color: #172b46;
+  border: 1px solid #c8d7ee;
+  border-radius: 10px;
+  background: white;
+  cursor: grab;
+}
+.operation-employee-card small,
+.operation-employee-card span {
+  color: #52677f;
+  font-size: 13px;
+}
+.operation-employee-card--selected {
+  outline: 2px solid #235ee9;
+  outline-offset: 1px;
+  background: #edf3ff;
+}
+.operation-employee-card:disabled {
+  cursor: default;
+}
+.operation-dropzone {
+  min-height: 130px;
+  padding: 6px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+.operation-dropzone--ready {
+  border-color: #a9c1f4;
+  border-style: dashed;
+  background: #f6f9ff;
+}
+.operation-dropzone--over {
+  border-color: #235ee9;
+  background: #e7efff;
+}
+.operation-add-shift {
+  width: 100%;
+  padding: 10px 6px;
+  border: 1px dashed #a1b7d7;
+  border-radius: 7px;
+  background: white;
+  color: #2355ac;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.operation-add-shift:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.operation-employee-card:focus-visible,
+.operation-add-shift:focus-visible {
+  outline: 3px solid #235ee9;
+  outline-offset: 3px;
+}
+.operation-roster-workspace {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.operation-roster-workspace .operation-employee-pool {
+  position: sticky;
+  top: 90px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+.operation-team-link {
+  display: block;
+  margin-top: 16px;
+  color: #2355ac;
+  line-height: 1.5;
+}
+.operation-roster-board {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+@media (max-width: 1100px) {
+  .operation-roster-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .operation-roster-workspace .operation-employee-pool {
+    position: static;
+    max-height: none;
+  }
+  .operation-employee-cards {
+    display: flex;
+    overflow-x: auto;
+    padding: 4px;
+  }
+  .operation-employee-card {
+    flex: 0 0 180px;
+  }
+}

@@ -63,6 +63,7 @@ export interface Editor {
   assetId?: string;
   requestId?: string;
   initial?: Record<string, unknown>;
+  employeeLocationsOnly?: boolean;
 }
 export function RecordForm({
   editor,
@@ -108,6 +109,9 @@ export function RecordForm({
     <label key={key}>
       {label}
       <input
+        autoFocus={
+          editor.kind === 'shift' && key === 'start' && !!data.employeeId
+        }
         disabled={busy}
         type={type}
         required={required}
@@ -169,7 +173,7 @@ export function RecordForm({
       {options.map(([value, text]) => (
         <label className="report-check" key={value}>
           <input
-            disabled={busy}
+            disabled={busy || (key === 'locationIds' && value === location)}
             type="checkbox"
             checked={(data[key] as string[]).includes(value)}
             onChange={(e) =>
@@ -189,8 +193,9 @@ export function RecordForm({
   return (
     <section className="panel report-panel operation-editor">
       <h2>
-        {editor.record ? 'Bewerken:' : 'Nieuwe'}{' '}
-        {recordLabels[editor.kind].toLowerCase()}
+        {editor.employeeLocationsOnly
+          ? `Locaties koppelen: ${String(data.name)}`
+          : `${editor.record ? 'Bewerken:' : 'Nieuwe'} ${recordLabels[editor.kind].toLowerCase()}`}
       </h2>
       <form
         onSubmit={(e) => {
@@ -216,7 +221,7 @@ export function RecordForm({
       >
         <div className="report-fields">
           <label>
-            Locatie
+            {editor.kind === 'employee' ? 'Thuislocatie' : 'Locatie'}
             <select
               disabled={
                 busy ||
@@ -226,7 +231,26 @@ export function RecordForm({
                     undefined)
               }
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
+              autoFocus={editor.employeeLocationsOnly}
+              onChange={(e) => {
+                const next = e.target.value;
+                setLocation(next);
+                if (editor.kind === 'employee')
+                  set('locationIds', [
+                    ...new Set([...(data.locationIds as string[]), next]),
+                  ]);
+                if (
+                  editor.kind === 'shift' &&
+                  data.employeeId &&
+                  !workspace.employees.some(
+                    (person) =>
+                      person.id === data.employeeId &&
+                      person.data.active &&
+                      person.data.locationIds.includes(next),
+                  )
+                )
+                  set('employeeId', null);
+              }}
             >
               {workspace.organization.locations.map((l) => (
                 <option key={l.id} value={l.id}>
@@ -262,7 +286,7 @@ export function RecordForm({
               {input('dueDate', 'Deadline', 'date')}
             </>
           )}
-          {editor.kind === 'employee' && (
+          {editor.kind === 'employee' && !editor.employeeLocationsOnly && (
             <>
               {input('name', 'Naam', 'text', true)}
               {input('number', 'Personeelsnummer', 'text', true)}
@@ -342,19 +366,26 @@ export function RecordForm({
           <>
             {multi(
               'locationIds',
-              'Inzetbaar op locaties',
+              'Gekoppelde locaties',
               workspace.organization.locations.map(
                 (l) => [l.id, l.name] as const,
               ),
             )}
-            {multi(
-              'skills',
-              'Vastgelegde vaardigheden',
-              Object.entries(activityLabels),
-            )}
+            <p>
+              De thuislocatie blijft gekoppeld. Op de gekoppelde locaties
+              verschijnt deze medewerker in het rooster bij Beschikbare
+              medewerkers.
+            </p>
+            {!editor.employeeLocationsOnly &&
+              multi(
+                'skills',
+                'Vastgelegde vaardigheden',
+                Object.entries(activityLabels),
+              )}
           </>
         )}
-        {(editor.kind === 'employee' || editor.kind === 'checklist') && (
+        {((editor.kind === 'employee' && !editor.employeeLocationsOnly) ||
+          editor.kind === 'checklist') && (
           <label className="report-check">
             <input
               type="checkbox"

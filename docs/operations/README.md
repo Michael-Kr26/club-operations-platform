@@ -35,6 +35,26 @@ Dezelfde modules bestaan onder `/organisaties/:organizationSlug/…`. De server 
 
 Begin met Team: voer medewerkers, inzetbare locaties en vaardigheden in. Maak daarna op Planning diensten. Zonder toegewezen medewerker blijft een dienst open. Voor een definitieve toegewezen dienst moet de benodigde vaardigheid zijn vastgelegd. Overlap wordt ook tussen locaties gecontroleerd, voor concepten én definitieve diensten; aansluitende diensten zijn toegestaan. Nachtdiensten moeten in twee dagen worden gesplitst. Reistijd wordt nog niet gecontroleerd.
 
+### Medewerkers vanuit het overzicht inplannen
+
+1. Open **Team** en kies bij een medewerker **Locaties koppelen**. Vink de
+   locaties aan waar deze persoon mag worden ingepland en sla op. De thuislocatie
+   blijft gekoppeld; kies eerst een andere thuislocatie als je de oude wilt loskoppelen.
+2. Open **Planning**, kies een locatie en de gewenste week. **Beschikbare medewerkers**
+   toont de actieve medewerkers die aan die locatie zijn gekoppeld.
+3. Sleep een medewerkerkaart naar de gewenste dag. Het dienstformulier opent met
+   de medewerker, locatie en datum ingevuld. Vul **Van** en **Tot** in, kies de
+   werkzaamheid en roosterstatus en klik **Opslaan**. Slepen alleen bewaart nog geen dienst.
+4. Zonder slepen: klik op de medewerkerkaart en daarna op **Dienst plannen** bij
+   de gewenste dag. Deze route werkt ook met toetsenbord of op een aanraakscherm.
+
+Bij alle locaties samen kan een kaart alleen worden gebruikt op een locatie
+waaraan de medewerker is gekoppeld. Inactieve medewerkers komen niet in het
+sleepoverzicht. Het overzicht bewijst geen beschikbaarheid wegens verlof of
+ziekte: die registratie volgt later. Overlappende tijden worden bij opslaan
+ook tussen clubs geweigerd. Een geweigerde dienst blijft in het formulier staan
+om de tijden te kunnen aanpassen. Leesrechten geven geen sleep- of opslagrechten.
+
 ## Bronnen en definities
 
 Leden komen uitsluitend uit een geaccepteerde Dewi XLSX-ledenexport via Rapportages → Excel/ZIP, met bevestigde locatie en peildatum. Standaard wordt de nieuwste bronpeildatum per locatie gebruikt. Je kunt ook een oudere bron kiezen. Namen, e-mail en telefoon zijn alleen in het afgeschermde ledenoverzicht beschikbaar; grafiekgegevens blijven aggregaten. Onbekende bezoekdatums blijven onbekend. Niet-bezoeken telt vanaf de bronpeildatum en bewijst geen opzegging. Een exportselectie of status Actief bewijst geen volledig bestand met geldige, ongepauzeerde abonnementen.

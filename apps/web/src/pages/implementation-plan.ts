@@ -18,10 +18,11 @@ export const implementationPlan = [
   {
     number: '09',
     phase: 'Hoge prioriteit',
-    status: 'Eerst uitbreiden',
+    status: 'In uitvoering',
     title: 'Rooster en dagelijkse opvolging uitbreiden',
     goal: 'De dagelijkse planning krijgt voorrang op automatische mail en churn.',
     actions: [
+      'Gebouwd: locaties koppelen via Team, beschikbare medewerkers per locatie en slepen naar een roosterdag met aansluitend de diensttijden invullen.',
       'Weekroosters kopiëren en vaste dienstpatronen toevoegen.',
       'Verlof, ziekte, open diensten en contracturen uitwerken.',
       'Het bestaande Excelrooster onderzoeken voor import, met locatie- en afwezigheidskleuren.',

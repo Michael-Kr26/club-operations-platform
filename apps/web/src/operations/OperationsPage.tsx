@@ -123,6 +123,17 @@ export function OperationsPage({ mode }: { mode: Mode }) {
       locationId: location || w?.organization.locations[0]?.id || '',
       initial,
     });
+  const createShift = (
+    date: string,
+    locationId: string,
+    employeeId: string | null = null,
+  ) =>
+    setEditor({
+      kind: 'shift',
+      locationId,
+      requestId: crypto.randomUUID(),
+      initial: { date, employeeId },
+    });
   if (query.isPending)
     return (
       <main className="cop-reports">
@@ -248,7 +259,7 @@ export function OperationsPage({ mode }: { mode: Mode }) {
       )}
       {editor && (
         <RecordForm
-          key={`${editor.kind}:${editor.record?.id ?? editor.requestId ?? 'new'}`}
+          key={`${editor.kind}:${editor.record?.id ?? editor.requestId ?? 'new'}:${editor.employeeLocationsOnly ? 'locations' : 'full'}`}
           editor={editor}
           workspace={w}
           busy={busy}
@@ -428,8 +439,8 @@ export function OperationsPage({ mode }: { mode: Mode }) {
             )}
           </div>
           <p>
-            Personeelsnummers zijn planningsgegevens. Accounts en toegangsrollen
-            worden afzonderlijk beheerd.
+            Koppel medewerkers aan één of meer locaties. Actieve medewerkers
+            verschijnen daar in het rooster bij Beschikbare medewerkers.
           </p>
           {w.principal.locations !== null && (
             <p>Personeelsgegevens wijzigen vereist organisatierechten.</p>
@@ -468,9 +479,24 @@ export function OperationsPage({ mode }: { mode: Mode }) {
                     <td>{e.data.active ? 'Actief' : 'Inactief'}</td>
                     <td>
                       {canWrite && w.principal.locations === null && (
-                        <button className="button" onClick={() => edit(e)}>
-                          Bewerken
-                        </button>
+                        <div className="operation-actions">
+                          <button
+                            className="button"
+                            onClick={() =>
+                              setEditor({
+                                kind: 'employee',
+                                record: e,
+                                locationId: e.locationId,
+                                employeeLocationsOnly: true,
+                              })
+                            }
+                          >
+                            Locaties koppelen
+                          </button>
+                          <button className="button" onClick={() => edit(e)}>
+                            Bewerken
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -488,7 +514,8 @@ export function OperationsPage({ mode }: { mode: Mode }) {
           canWrite={canWrite}
           busy={busy}
           edit={edit}
-          create={(date) => create('shift', { date })}
+          create={createShift}
+          teamLink={link('team')}
         />
       )}
       {mode === 'checks' && (
@@ -888,15 +915,38 @@ function PlanningView({
   busy,
   edit,
   create,
+  teamLink,
 }: {
   workspace: OperationsWorkspace;
   location: string;
   canWrite: boolean;
   busy: boolean;
   edit: (r: OperationRecord) => void;
-  create: (date: string) => void;
+  create: (
+    date: string,
+    locationId: string,
+    employeeId?: string | null,
+  ) => void;
+  teamLink: string;
 }) {
   const [anchor, setAnchor] = useState(today());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [dropError, setDropError] = useState('');
+  const employeeDragType = 'application/x-cop-employee';
+  const people = w.employees
+    .filter(
+      (person) =>
+        person.data.active &&
+        person.data.locationIds.some((id) =>
+          w.organization.locations.some((l) => l.id === id),
+        ) &&
+        (!location || person.data.locationIds.includes(location)),
+    )
+    .sort((a, b) => a.data.name.localeCompare(b.data.name, 'nl'));
+  const selected = people.find((person) => person.id === selectedId);
+  const dragging = people.find((person) => person.id === draggingId);
   const stamp = Date.parse(anchor || today()),
     weekday = new Date(stamp).getUTCDay() || 7,
     monday = stamp - (weekday - 1) * 86400000;
@@ -925,7 +975,11 @@ function PlanningView({
     <>
       <div className="operation-heading">
         <div>
-          <h2>Vijf locaties, één rooster</h2>
+          <h2>
+            {location
+              ? `Rooster ${w.organization.locations.find((l) => l.id === location)?.name}`
+              : 'Vijf locaties, één rooster'}
+          </h2>
           <p>
             {days[0]} t/m {days[6]}
           </p>
@@ -933,7 +987,19 @@ function PlanningView({
         {canWrite && (
           <button
             className="button button--primary"
-            onClick={() => create(anchor)}
+            disabled={busy || !w.organization.locations.length}
+            onClick={() =>
+              create(
+                anchor,
+                location ||
+                  selected?.data.locationIds.find((id) =>
+                    w.organization.locations.some((l) => l.id === id),
+                  ) ||
+                  w.organization.locations[0]?.id ||
+                  '',
+                selected?.id,
+              )
+            }
           >
             Dienst toevoegen
           </button>
@@ -971,75 +1037,251 @@ function PlanningView({
           Volgende week
         </button>
       </div>
-      <p>
-        {shifts.filter((s) => s.data.employeeId === null).length} open diensten
-        · {fmt(floor / 60)} definitief ingeplande vloeruren in deze selectie.
-      </p>
-      {w.warnings.map((v) => (
-        <p className="operation-notice" key={v}>
-          {v}
-        </p>
-      ))}
-      <div className="operation-roster-scroll">
-        <table className="operation-roster">
-          <thead>
-            <tr>
-              <th>Locatie</th>
-              {days.map((d) => (
-                <th key={d}>
-                  {new Date(`${d}T12:00:00Z`).toLocaleDateString('nl-NL', {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    timeZone: 'Europe/Amsterdam',
-                  })}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {w.organization.locations
-              .filter((l) => !location || l.id === location)
-              .map((l) => (
-                <tr key={l.id}>
-                  <th>{l.name}</th>
+      <div className="operation-roster-workspace">
+        <section
+          className="operation-employee-pool"
+          aria-label="Beschikbare medewerkers"
+        >
+          <div className="operation-heading">
+            <div>
+              <h3>Beschikbare medewerkers · {people.length}</h3>
+              <p>
+                {location
+                  ? 'Actief en gekoppeld aan deze locatie.'
+                  : 'Kies een locatie om het overzicht te beperken.'}
+              </p>
+            </div>
+          </div>
+          <p>
+            Sleep naar een dag. Of klik op een medewerker en daarna op Dienst
+            plannen.
+          </p>
+          <div className="operation-employee-cards">
+            {people.map((person) => (
+              <button
+                type="button"
+                key={person.id}
+                className={`operation-employee-card ${selected?.id === person.id ? 'operation-employee-card--selected' : ''}`}
+                aria-label={`${person.data.name} selecteren voor een dienst`}
+                aria-pressed={selected?.id === person.id}
+                disabled={!canWrite || busy}
+                draggable={canWrite && !busy}
+                onClick={() => {
+                  setSelectedId(selected?.id === person.id ? null : person.id);
+                  setDropError('');
+                }}
+                onDragStart={(event) => {
+                  if (!canWrite || busy) {
+                    event.preventDefault();
+                    return;
+                  }
+                  event.dataTransfer.setData(
+                    employeeDragType,
+                    JSON.stringify({
+                      employeeId: person.id,
+                      organizationId: w.organization.id,
+                      dataset: w.dataset,
+                    }),
+                  );
+                  event.dataTransfer.effectAllowed = 'copy';
+                  setDraggingId(person.id);
+                  setDropError('');
+                }}
+                onDragEnd={() => {
+                  setDraggingId(null);
+                  setDropTarget(null);
+                }}
+              >
+                <strong>{person.data.name}</strong>
+                <span>{person.data.number}</span>
+                <small>
+                  {person.data.locationIds
+                    .map(
+                      (id) =>
+                        w.organization.locations.find((l) => l.id === id)
+                          ?.name ?? id,
+                    )
+                    .join(' · ')}
+                </small>
+              </button>
+            ))}
+          </div>
+          <Link className="operation-team-link" to={teamLink}>
+            Medewerkers en locaties beheren
+          </Link>
+          {!people.length && (
+            <p>
+              Nog geen actieve medewerkers aan deze selectie gekoppeld. Voeg ze
+              toe of koppel locaties via Team.
+            </p>
+          )}
+          {selected && (
+            <p role="status">
+              {selected.data.name} geselecteerd. Kies hieronder een dag om de
+              diensttijden in te vullen.
+            </p>
+          )}
+          {dropError && (
+            <p role="alert" className="report-error">
+              {dropError}
+            </p>
+          )}
+        </section>
+        <div className="operation-roster-board">
+          <p>
+            {shifts.filter((s) => s.data.employeeId === null).length} open
+            diensten · {fmt(floor / 60)} definitief ingeplande vloeruren in deze
+            selectie.
+          </p>
+          {w.warnings.map((v) => (
+            <p className="operation-notice" key={v}>
+              {v}
+            </p>
+          ))}
+          <div className="operation-roster-scroll">
+            <table className="operation-roster">
+              <thead>
+                <tr>
+                  <th>Locatie</th>
                   {days.map((d) => (
-                    <td key={d}>
-                      {shifts
-                        .filter(
-                          (s) => s.locationId === l.id && s.data.date === d,
-                        )
-                        .sort((a, b) =>
-                          a.data.start.localeCompare(b.data.start),
-                        )
-                        .map((s) => (
-                          <button
-                            className={`operation-shift operation-shift--${s.data.status}`}
-                            disabled={busy || !canWrite}
-                            key={s.id}
-                            onClick={() => edit(s)}
-                          >
-                            <strong>
-                              {s.data.start}–{s.data.end}
-                            </strong>
-                            <span>
-                              {w.employees.find(
-                                (e) => e.id === s.data.employeeId,
-                              )?.data.name ?? 'Open dienst'}
-                            </span>
-                            <small>
-                              {activityLabels[s.data.activity]} ·{' '}
-                              {statusLabels[s.data.status]}
-                            </small>
-                            {s.data.notes && <small>{s.data.notes}</small>}
-                          </button>
-                        ))}
-                    </td>
+                    <th key={d}>
+                      {new Date(`${d}T12:00:00Z`).toLocaleDateString('nl-NL', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                        timeZone: 'Europe/Amsterdam',
+                      })}
+                    </th>
                   ))}
                 </tr>
-              ))}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {w.organization.locations
+                  .filter((l) => !location || l.id === location)
+                  .map((l) => (
+                    <tr key={l.id}>
+                      <th>{l.name}</th>
+                      {days.map((d) => (
+                        <td key={d}>
+                          <div
+                            role="group"
+                            aria-label={`Roostervak ${l.name} ${d}`}
+                            className={`operation-dropzone ${dropTarget === `${l.id}:${d}` ? 'operation-dropzone--over' : ''} ${canWrite && (dragging ?? selected)?.data.locationIds.includes(l.id) ? 'operation-dropzone--ready' : ''}`}
+                            onDragOver={(event) => {
+                              if (
+                                !canWrite ||
+                                busy ||
+                                !event.dataTransfer.types.includes(
+                                  employeeDragType,
+                                )
+                              )
+                                return;
+                              if (
+                                dragging &&
+                                !dragging.data.locationIds.includes(l.id)
+                              )
+                                return;
+                              event.preventDefault();
+                              event.dataTransfer.dropEffect = 'copy';
+                              setDropTarget(`${l.id}:${d}`);
+                            }}
+                            onDragLeave={() => setDropTarget(null)}
+                            onDrop={(event) => {
+                              event.preventDefault();
+                              setDropTarget(null);
+                              setDraggingId(null);
+                              if (!canWrite || busy) return;
+                              try {
+                                const payload: unknown = JSON.parse(
+                                  event.dataTransfer.getData(employeeDragType),
+                                );
+                                if (
+                                  !payload ||
+                                  typeof payload !== 'object' ||
+                                  !('organizationId' in payload) ||
+                                  payload.organizationId !==
+                                    w.organization.id ||
+                                  !('dataset' in payload) ||
+                                  payload.dataset !== w.dataset ||
+                                  !('employeeId' in payload)
+                                )
+                                  throw new Error('selection');
+                                const person = people.find(
+                                  (entry) => entry.id === payload.employeeId,
+                                );
+                                if (
+                                  !person ||
+                                  !person.data.locationIds.includes(l.id)
+                                )
+                                  throw new Error('location');
+                                setDropError('');
+                                setSelectedId(person.id);
+                                create(d, l.id, person.id);
+                              } catch {
+                                setDropError(
+                                  'Deze medewerker kan hier niet worden ingepland. Controleer de actieve status en gekoppelde locaties via Team.',
+                                );
+                              }
+                            }}
+                          >
+                            {shifts
+                              .filter(
+                                (s) =>
+                                  s.locationId === l.id && s.data.date === d,
+                              )
+                              .sort((a, b) =>
+                                a.data.start.localeCompare(b.data.start),
+                              )
+                              .map((s) => (
+                                <button
+                                  className={`operation-shift operation-shift--${s.data.status}`}
+                                  disabled={busy || !canWrite}
+                                  key={s.id}
+                                  onClick={() => edit(s)}
+                                >
+                                  <strong>
+                                    {s.data.start}–{s.data.end}
+                                  </strong>
+                                  <span>
+                                    {w.employees.find(
+                                      (e) => e.id === s.data.employeeId,
+                                    )?.data.name ?? 'Open dienst'}
+                                  </span>
+                                  <small>
+                                    {activityLabels[s.data.activity]} ·{' '}
+                                    {statusLabels[s.data.status]}
+                                  </small>
+                                  {s.data.notes && (
+                                    <small>{s.data.notes}</small>
+                                  )}
+                                </button>
+                              ))}
+                            {canWrite && (
+                              <button
+                                type="button"
+                                className="operation-add-shift"
+                                disabled={
+                                  busy ||
+                                  (!!selected &&
+                                    !selected.data.locationIds.includes(l.id))
+                                }
+                                aria-label={`Dienst plannen voor ${l.name} op ${d}${selected ? ` met ${selected.data.name}` : ''}`}
+                                onClick={() => create(d, l.id, selected?.id)}
+                              >
+                                {selected
+                                  ? `+ Plan ${selected.data.name}`
+                                  : '+ Dienst plannen'}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
       <h3>Ingeplande uren per medewerker</h3>
       <p>
