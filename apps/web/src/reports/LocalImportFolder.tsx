@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ImportFolders } from './ImportFolders';
 import type { WorkbookInboxStatus } from '@cop/contracts';
 import type { WorkbookRequest } from './WorkbookUpload';
 export function LocalImportFolder({
@@ -32,13 +33,11 @@ export function LocalImportFolder({
       <span className="panel__eyebrow">Dewi & Healthplanner</span>
       <h2>Downloaden → opslaan → dashboard</h2>
       <p>
-        Sla ondersteunde XLSX-, EML-, PAY.-PDF- of ZIP-rapportages op in deze
-        map of in submappen zoals Omzet/Achterveld. COP controleert de map
-        ongeveer elke 30 seconden zolang het draait en bewaart de originelen.
+        Gebruik de onderstaande mappen. COP controleert ze ongeveer elke 30
+        seconden zolang het draait en bewaart de originelen. XLSX, EML, PAY.-PDF
+        en ZIP worden ondersteund.
       </p>
-      <p style={{ overflowWrap: 'anywhere' }}>
-        <code>{inbox.path}</code>
-      </p>
+      <ImportFolders root={inbox.path} />
       <p>
         {inbox.enabled
           ? 'Automatische mapimport staat aan.'

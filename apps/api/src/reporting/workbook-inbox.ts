@@ -53,6 +53,11 @@ export class WorkbookInbox {
         'Mapimport is alleen beschikbaar in de Dockerloze lokale COP-start.',
       );
     await mkdir(this.path(org, dataset), { recursive: true, mode: 0o700 });
+    for (const folder of ['omzet', 'registratie', 'statusrapporten'])
+      await mkdir(join(this.path(org, dataset), folder), {
+        recursive: true,
+        mode: 0o700,
+      });
   }
   private async readRegular(path: string, max: number) {
     const entry = await lstat(path);

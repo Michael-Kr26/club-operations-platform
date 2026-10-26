@@ -4,6 +4,9 @@
   "private": true,
   "description": "Multi-tenant operations platform for fitness clubs.",
   "scripts": {
+    "backup:local": "node apps/api/scripts/local-maintenance.mjs backup",
+    "backup:list": "node apps/api/scripts/local-maintenance.mjs list",
+    "backup:restore": "node apps/api/scripts/local-maintenance.mjs restore",
     "build": "pnpm -r --if-present build",
     "build:packages": "pnpm --filter @cop/contracts build && pnpm --filter @cop/db build",
     "db:down": "docker compose down",

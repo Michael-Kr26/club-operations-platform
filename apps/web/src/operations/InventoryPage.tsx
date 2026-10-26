@@ -39,6 +39,7 @@ function InventoryEditor({
   }
   const [adding, setAdding] = useState(false),
     [name, setName] = useState(''),
+    [color, setColor] = useState(''),
     [category, setCategory] = useState<InventoryCategory>('shirts'),
     [sized, setSized] = useState(true),
     [addError, setAddError] = useState('');
@@ -65,6 +66,7 @@ function InventoryEditor({
   function startAdding() {
     setAdding(true);
     setName('');
+    setColor('');
     setAddError('');
     setCategory(tab === 'merch' ? 'merch' : 'shirts');
     setSized(tab !== 'merch');
@@ -79,7 +81,13 @@ function InventoryEditor({
       : { total: null };
     setItems((previous) => [
       ...previous,
-      { id: crypto.randomUUID(), name: name.trim(), category, quantities },
+      {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        category,
+        quantities,
+        ...(category === 'merch' ? { color: color.trim() || null } : {}),
+      },
     ]);
     setTab(category === 'merch' ? 'merch' : 'workwear');
     setDirty(true);
@@ -165,6 +173,17 @@ function InventoryEditor({
                 <option value="total">Eén totaal (zonder maat)</option>
               </select>
             </label>
+            {category === 'merch' && (
+              <label className="inventory-add-color">
+                Kleur (optioneel)
+                <input
+                  maxLength={60}
+                  placeholder="Bijvoorbeeld blauw of zwart/oranje"
+                  value={color}
+                  onChange={(event) => setColor(event.target.value)}
+                />
+              </label>
+            )}
           </div>
           {addError && <p role="alert">{addError}</p>}
           <button type="submit" className="button button--primary">
@@ -241,6 +260,29 @@ function InventoryEditor({
                               : 'Nog niet geteld'}
                           </span>
                         </header>
+                        {item.category === 'merch' && (
+                          <label className="inventory-color">
+                            Kleur
+                            <input
+                              aria-label={`${item.name} kleur`}
+                              maxLength={60}
+                              value={item.color ?? ''}
+                              placeholder="Nog geen kleur"
+                              disabled={!value.canWrite || busy}
+                              onChange={(event) => {
+                                const next = event.target.value;
+                                setDirty(true);
+                                setItems((previous) =>
+                                  previous.map((entry) =>
+                                    entry.id === item.id
+                                      ? { ...entry, color: next }
+                                      : entry,
+                                  ),
+                                );
+                              }}
+                            />
+                          </label>
+                        )}
                         <div
                           className={`inventory-sizes ${'total' in item.quantities ? 'inventory-sizes--total' : ''}`}
                         >

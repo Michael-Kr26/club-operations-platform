@@ -1,5 +1,9 @@
 # Operationele werkruimte
 
+Back-ups, herstel en Windows-opstartondersteuning: zie [Lokaal beheer](LOCAL-BEHEER.md).
+Merchandise heeft een optioneel kleurveld bij toevoegen en wijzigen. Maak voor
+aparte kleurvoorraden afzonderlijke artikelen aan; aantallen blijven per artikel.
+
 Deze eerste versie verbindt vijf modules met de lokale COP-database. Er is geen betaalde dienst of AI nodig. Rapportage-import en ochtendmail blijven afzonderlijke onderdelen.
 
 ## Ophalen en starten op de werklaptop

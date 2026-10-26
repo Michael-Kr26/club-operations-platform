@@ -1,3 +1,4 @@
+import { ImportFolders } from './ImportFolders';
 import { useState } from 'react';
 import type { ForecastDashboard, WorkbookPreferences } from '@cop/contracts';
 import type { WorkbookRequest } from './WorkbookUpload';
@@ -156,9 +157,7 @@ export function WorkbookSettings({
       <h3>Vaste lokale importmap</h3>
       {data.inbox?.available ? (
         <>
-          <p>
-            <code>{data.inbox.path}</code>
-          </p>
+          <ImportFolders root={data.inbox.path} />
           <p>
             COP controleert deze map ongeveer elke 30 seconden zolang het
             programma draait. Originelen blijven in de map. Inschakelen staat

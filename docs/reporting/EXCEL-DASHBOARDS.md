@@ -116,18 +116,20 @@ ZIP-uitbreiding gecontroleerd op 18 oktober 2026: 91 tests (68 API, 23 web), Typ
 Bij `pnpm.cmd dev:local` gebruikt Sport Society standaard het bestand:
 
 ```text
-C:\dev\ClubOperationsPlatform\imports\Healthplanner_leden_updates.xlsx
+C:\dev\ClubOperationsPlatform\imports\registratie\Healthplanner_leden_updates.xlsx
 ```
 
 Het pad wordt opgebouwd vanuit de projectmap, onafhankelijk van de huidige terminalmap. Op Michaels laptop is de projectmap `C:\dev\ClubOperationsPlatform`. Kopieer de bestaande Healthplanner-updatetabel eenmalig naar `imports\Healthplanner_leden_updates.xlsx`; er worden geen bestaande bestanden verplaatst of verwijderd. COP controleert dit alleen lokaal, bij opstart en daarna maximaal eenmaal per minuut. Gewijzigde inhoud wordt als Werkelijk geïmporteerd, met de club- en week-/maandperioden uit de bestaande Healthplanner-updatetabel. Het download- of wijzigingsmoment wordt nooit als rapportageperiode gebruikt. Dezelfde inhoud wordt ook na herstart niet dubbel opgeslagen. Een ontbrekend, vergrendeld, nog geschreven of ongeldig bestand vervangt geen eerder geldige gegevens. De bronstatus en **Nu ophalen** staan boven het grafische dashboard (`/rapportages/excel`), zichtbaar voor organisatiebeheerders. De standaardmap staat lokaal buiten OneDrive.
 
-Voor andere gedownloade Dewi- en Healthplanner-rapportages staat de standaard importmap naast dat bestand:
+Gebruik voor gedownloade rapportages deze vaste mappen:
 
 ```text
-C:\dev\ClubOperationsPlatform\imports
+C:\dev\ClubOperationsPlatform\imports\omzet
+C:\dev\ClubOperationsPlatform\imports\registratie
+C:\dev\ClubOperationsPlatform\imports\statusrapporten
 ```
 
-Bewaar downloads zelf in die map (bijvoorbeeld met **Opslaan als** in de browser). COP opent de websites of mailboxen niet zelf. De map wordt lokaal aangemaakt bij de eerste controle en ongeveer iedere 30 seconden bekeken, maximaal drie gewijzigde bestanden per scan. ZIP/XLSX/EML en bevestigde PAY.-PDF worden volgens de bestaande adapters verwerkt; onvoltooide downloads en Excel-lockbestanden worden niet geïmporteerd. Originelen blijven staan. Er wordt geen algemene Downloads-map doorzocht.
+Bewaar PAY.-PDF-bestanden in **omzet**, Dewi Leden/Contracten en Healthplanner in **registratie**, en wekelijks vijf Dewi-statusrapporten in **statusrapporten** (bijvoorbeeld forecast-Bveld-2644.xlsx). COP opent de websites of mailboxen niet zelf. De mappen worden lokaal aangemaakt en ongeveer iedere 30 seconden bekeken, maximaal drie gewijzigde bestanden per scan. ZIP/XLSX/EML en bevestigde PAY.-PDF worden volgens de bestaande adapters verwerkt; onvoltooide downloads en Excel-lockbestanden worden niet geïmporteerd. Originelen blijven staan. Er wordt geen algemene Downloads-map doorzocht.
 
 De lokale start schakelt de mapimport voor de geconfigureerde organisatie en Werkelijk de eerste keer in. Een eerdere expliciete uitschakeling wordt behouden. Je kunt deze keuze wijzigen onder **Importinstellingen en bestandsstatus** op het dashboard. Per organisatie en dataset blijven imports gescheiden.
 
@@ -152,7 +154,7 @@ Een geaccepteerd bestand met lege relevante cellen is geen bewijs dat die cijfer
 De importmap scant maximaal twee submapniveaus, bijvoorbeeld:
 
 ```text
-imports/Omzet/Achterveld/rapport.pdf
+imports/omzet/Achterveld/rapport.pdf
 ```
 
 Oude XLS en CSV in de importmap worden als gevonden maar nog niet verwerkbaar zichtbaar bij de bestandsstatus en bovenaan Gegevens & imports (voor organisatiebeheerders). Er worden geen bedragen uit zulke XLS/CSV-bestanden gehaald en ze tellen niet als aangeleverde cijfers. Voor PAY.-PDF geldt de bevestigingsflow hieronder. Ondersteunde XLSX/EML/ZIP wordt ook in deze submappen verwerkt. De submapnaam wordt niet stilzwijgend gebruikt als bevestiging van de club of peildatum. Gebruik de bestaande uploadcontrole wanneer een ondersteund bestand deze context mist. Symlinks en Excel-lockbestanden worden overgeslagen; maximaal 500 bronbestanden / 1.000 onderzochte mapvermeldingen per controle. Verwijderde bestanden verdwijnen bij de volgende scan uit de lijst gevonden bestanden; eerder geïmporteerde originelen blijven in de database.

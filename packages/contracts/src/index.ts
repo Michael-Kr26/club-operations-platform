@@ -8,3 +8,4 @@ export * from './forecasts';
 export * from './operations';
 
 export * from './data-catalog';
+export * from './local-maintenance';

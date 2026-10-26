@@ -511,13 +511,13 @@ export function App() {
                       </div>
                       <p>
                         De lokale basis, rapportages en operationele modules
-                        zijn gebouwd. Nu controleren we het ontwerp en maken we
-                        de dagelijkse ontvangst en verzending betrouwbaar.
+                        zijn gebouwd. Roosteruitbreiding heeft nu hoge
+                        prioriteit, naast bronbestanden en lokaal beheer.
                       </p>
                       <div className="foundation-note">
                         <p>
-                          Live bronontvangst en echte mailverzending moeten nog
-                          worden ingericht en gecontroleerd.
+                          Automatische ontvangst regelen we later. Echte
+                          mailverzending en maandchurn volgen veel later.
                         </p>
                       </div>
                       <Link

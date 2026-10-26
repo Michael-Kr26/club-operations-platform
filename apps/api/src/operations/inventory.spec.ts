@@ -39,6 +39,50 @@ afterAll(async () => {
 });
 
 describe('centrale voorraad', () => {
+  it('bewaart en wijzigt merchandise-kleuren zonder bestaande artikelen zonder kleur te veranderen', async () => {
+    const colorAdmin = { ...admin, organizationId: 'inventory-other' };
+    const initial = await inventory.read('inventory-other', colorAdmin, 'demo');
+    const items = [
+      {
+        id: 'blue-bottle',
+        name: 'Sportfles',
+        category: 'merch' as const,
+        color: '  Blauw  ',
+        quantities: { total: 5 },
+      },
+    ];
+    const saved = await inventory.save('inventory-other', colorAdmin, {
+      dataset: 'demo',
+      version: initial.version,
+      items,
+    });
+    expect(saved.items[0]?.color).toBe('Blauw');
+    const updated = await new InventoryStore(pool).save(
+      'inventory-other',
+      colorAdmin,
+      {
+        dataset: 'demo',
+        version: saved.version,
+        items: [{ ...saved.items[0]!, color: 'Zwart/oranje' }],
+      },
+    );
+    expect(updated.items[0]?.color).toBe('Zwart/oranje');
+    for (const color of [42, {}, 'a'.repeat(61)]) {
+      await expect(
+        inventory.save('inventory-other', colorAdmin, {
+          dataset: 'demo',
+          version: updated.version,
+          items: [{ ...updated.items[0], color }],
+        }),
+      ).rejects.toThrow('kleur');
+    }
+    const cleared = await inventory.save('inventory-other', colorAdmin, {
+      dataset: 'demo',
+      version: updated.version,
+      items: [{ ...updated.items[0]!, color: '' }],
+    });
+    expect(cleared.items[0]?.color).toBeNull();
+  });
   it('bewaart opgegeven aantallen, scheidt onbekend van nul en overschrijft niets bij opnieuw starten', async () => {
     const initial = await inventory.read('sport-society', admin, 'real');
     expect(initial.items[0]?.quantities).toEqual({
@@ -68,7 +112,7 @@ describe('centrale voorraad', () => {
       (await inventory.read('sport-society', admin, 'demo')).items,
     ).toEqual([]);
     const audit = await pool.query(
-      "SELECT detail FROM report_audit WHERE action='inventory.updated'",
+      "SELECT detail FROM report_audit WHERE action='inventory.updated' AND organization_id='sport-society'",
     );
     expect(audit.rows[0].detail.items).toEqual(items);
   });

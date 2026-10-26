@@ -66,13 +66,13 @@ describe('vast lokaal Healthplanner-bestand', () => {
     expect(
       defaultHealthplannerFile('win32', 'C:/dev/ClubOperationsPlatform'),
     ).toBe(
-      String.raw`C:\dev\ClubOperationsPlatform\imports\Healthplanner_leden_updates.xlsx`,
+      String.raw`C:\dev\ClubOperationsPlatform\imports\registratie\Healthplanner_leden_updates.xlsx`,
     );
     expect(defaultImportFolder('linux', '/workspace/cop')).toBe(
       '/workspace/cop/imports',
     );
     expect(defaultHealthplannerFile('linux', '/workspace/cop')).toBe(
-      '/workspace/cop/imports/Healthplanner_leden_updates.xlsx',
+      '/workspace/cop/imports/registratie/Healthplanner_leden_updates.xlsx',
     );
   });
   it('importeert gewijzigd Excel met bronperioden en voorkomt dubbeltelling na herstart', async () => {
@@ -171,7 +171,10 @@ describe('vast lokaal Healthplanner-bestand', () => {
         .status(sportSociety.id, 'real', true)
         .files.map((file) => file.filename),
     ).toEqual(
-      expect.arrayContaining(['download.xlsx', 'Omzet/Achterveld/omzet.pdf']),
+      expect.arrayContaining([
+        'download.xlsx',
+        `${process.platform === 'win32' ? 'omzet' : 'Omzet'}/Achterveld/omzet.pdf`,
+      ]),
     );
     expect(
       inbox
@@ -187,9 +190,63 @@ describe('vast lokaal Healthplanner-bestand', () => {
     await watcher.scan(sportSociety, now);
     expect(watcher.status(sportSociety.id)?.status).toBe('waiting');
     const link = join(directory, 'link.xlsx');
-    await symlink(path, link);
+    try {
+      await symlink(path, link);
+    } catch (error) {
+      if (
+        process.platform === 'win32' &&
+        (error as NodeJS.ErrnoException).code === 'EPERM'
+      ) {
+        // Windows file symlinks require a privilege. A directory junction does not;
+        // it must still be rejected even when its name ends in .xlsx.
+        await symlink(directory, link, 'junction');
+      } else throw error;
+    }
     const linked = source(link);
     await linked.scan(sportSociety, now);
     expect(linked.status(sportSociety.id)?.status).toBe('error');
+  });
+  it('leest vijf wekelijkse statusrapporten uit de eigen submap en telt opnieuw scannen niet dubbel', async () => {
+    const folder = join(directory, 'weekly-imports');
+    vi.stubEnv('COP_IMPORT_FOLDER', folder);
+    vi.stubEnv('COP_IMPORT_ORGANIZATION', sportSociety.id);
+    const inbox = new WorkbookInbox(directory, imports, true);
+    await inbox.enable(sportSociety.id, 'real');
+    for (const location of sportSociety.locations) {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load((await forecastFixture()) as never);
+      workbook.getWorksheet('Omschrijving')!.getCell('A2').value =
+        `Forecast ${sportSociety.id}-${location.id} 12-10-2026`;
+      await put(
+        join(
+          folder,
+          'statusrapporten',
+          `forecast-${location.id === 'barneveld' ? 'Bveld' : location.id}-2644.xlsx`,
+        ),
+        Buffer.from(await workbook.xlsx.writeBuffer()),
+      );
+    }
+    await imports.preferences.inbox(sportSociety.id, 'real', 'fixture', true);
+    await inbox.scan(sportSociety, 'real', now);
+    await inbox.scan(sportSociety, 'real', now);
+    const forecasts = (await imports.list(principal, 'real')).filter(
+      (entry) =>
+        entry.status === 'accepted' && entry.report?.kind === 'forecast',
+    );
+    expect(forecasts).toHaveLength(5);
+    expect(
+      inbox
+        .status(sportSociety.id, 'real', true)
+        .files.filter((entry) => entry.status === 'accepted'),
+    ).toHaveLength(5);
+    const restarted = new WorkbookInbox(directory, imports, true);
+    await restarted.scan(sportSociety, 'real', now);
+    await restarted.scan(sportSociety, 'real', now);
+    expect(
+      (await imports.list(principal, 'real')).filter(
+        (entry) =>
+          entry.status === 'accepted' && entry.report?.kind === 'forecast',
+      ),
+    ).toHaveLength(5);
   });
 });

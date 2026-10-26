@@ -125,13 +125,14 @@ const definitions: Definition[] = [
   {
     id: 'forecast',
     category: 'Leden',
-    title: 'Dewi ledenontwikkeling / forecast',
+    title: 'Dewi statusrapporten / forecast',
     description:
       'Opening, instroom, uitstroom en eindstand uit het Dewi-forecastbestand.',
     fields: ['Ledenontwikkeling'],
-    formats: 'Dewi forecast (.xlsx)',
+    formats:
+      'Wekelijks Dewi-statusrapport (.xlsx), bijvoorbeeld forecast-Bveld-2644.xlsx',
     needed:
-      'Forecast KPI-werkblad, detailbladen en Omschrijving met club/exportdatum.',
+      'Vijf bestanden per week in imports/statusrapporten. Forecast KPI, detailbladen en Omschrijving met club/exportdatum.',
     note: 'De brondefinitie en indicatieve churn blijven apart van de definitieve churnberekening.',
     route: 'files',
   },

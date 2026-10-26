@@ -124,6 +124,7 @@ export interface InventoryItem {
   id: string;
   name: string;
   category: InventoryCategory;
+  color?: string | null;
   quantities: Partial<Record<ClothingSize | 'total', number | null>>;
 }
 export interface InventoryOverview {

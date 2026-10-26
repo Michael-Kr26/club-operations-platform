@@ -11,33 +11,33 @@ export function ImplementationPage() {
     (step) =>
       filter === 'Alles' ||
       (filter === 'Basis beschikbaar'
-        ? step.status === 'Gebouwd'
-        : step.status !== 'Gebouwd'),
+        ? step.status.startsWith('Gebouwd')
+        : !step.status.startsWith('Gebouwd')),
   );
   return (
     <div className="implementation">
       <section className="page-heading">
         <div>
           <span className="page-heading__eyebrow">
-            COP · Ontwikkelplan · Bijgewerkt 21 oktober 2026
+            COP · Ontwikkelplan · Bijgewerkt 26 oktober 2026
           </span>
           <h1>Implementatie</h1>
           <p>
-            Van werkende lokale basis naar een betrouwbare dagelijkse
-            clubupdate.
+            Rooster en dagelijkse werkprocessen eerst. Imports en lokaal beheer
+            ondersteunen het dagelijkse gebruik.
           </p>
         </div>
       </section>
       <div className="implementation__intro">
         <span className="implementation__label">Eerstvolgende stap</span>
-        <h2>Het nieuwe overzicht in de praktijk controleren</h2>
+        <h2>Rooster en dagelijkse opvolging uitbreiden</h2>
         <p>
-          Bekijk de ochtendmail en grafieken op je laptop. Daarna richten we de
-          brongegevens, dagelijkse ontvangst en echte verzending in, in die
-          volgorde.
+          De planning heeft hoge prioriteit. Daarnaast controleren we de
+          bronbestanden en bouwen we lokaal beheer uit. Echte mailverzending en
+          maandchurn volgen veel later.
         </p>
-        <Link className="button button--primary" to={`${base}/rapportages`}>
-          Open de rapportages
+        <Link className="button button--primary" to={`${base}/planning`}>
+          Open het rooster
         </Link>
       </div>
       <p className="implementation__notice">
@@ -49,24 +49,24 @@ export function ImplementationPage() {
       </p>
       <section aria-label="Mijlpalen" className="implementation__milestones">
         <div>
-          <strong>01 · Basis</strong>
-          <span>Lokale modules zijn gebouwd</span>
+          <strong>09 · Hoge prioriteit</strong>
+          <span>Rooster en dagelijkse opvolging</span>
         </div>
         <div>
-          <strong>02–04 · Cijfers</strong>
-          <span>Ontwerp controleren en definities vastleggen</span>
+          <strong>02–04 & 08 · Nu</strong>
+          <span>Bestanden, Dewi, PDF’s en lokaal beheer</span>
         </div>
         <div>
-          <strong>05–08 · Dagelijks gebruik</strong>
-          <span>Ontvangst, verzending, churn en continuïteit</span>
+          <strong>05–07 · Later</strong>
+          <span>Ontvangst regelen; verzending en churn veel later</span>
         </div>
         <div>
-          <strong>09–10 · Uitbreiden</strong>
-          <span>Rooster en overige inzichten</span>
+          <strong>10 · Lange termijn</strong>
+          <span>Meer inzichten en andere organisaties</span>
         </div>
       </section>
       <div className="implementation__toolbar">
-        <h2>Stappen in volgorde</h2>
+        <h2>Stappen op prioriteit</h2>
         <label>
           Toon{' '}
           <select
@@ -82,7 +82,7 @@ export function ImplementationPage() {
       <ol className="implementation__steps">
         {shown.map((step) => (
           <li key={step.number}>
-            <details open={step.number === '02'}>
+            <details open={step.number === '02' || step.number === '09'}>
               <summary>
                 <span className="implementation__number">{step.number}</span>
                 <span className="implementation__title">
@@ -90,7 +90,7 @@ export function ImplementationPage() {
                   <strong>{step.title}</strong>
                 </span>
                 <span
-                  className={`implementation__status ${step.status === 'Gebouwd' ? 'implementation__status--built' : ''}`}
+                  className={`implementation__status ${step.status.startsWith('Gebouwd') ? 'implementation__status--built' : ''}`}
                 >
                   {step.status}
                 </span>
@@ -122,10 +122,10 @@ export function ImplementationPage() {
         ))}
       </ol>
       <p className="implementation__notice">
-        Geen vaste opleverdatums: toegang tot bronnen, voorbeeldbestanden en
-        praktijkcontroles bepalen het tempo. We werken eerst ochtendmail en
-        maandchurn af; de overige uitbreidingen volgen daarna. Statuswijzigingen
-        worden in dit ontwikkelplan bijgewerkt.
+        De oorspronkelijke stapnummers zijn behouden. De volgorde volgt jouw
+        prioriteiten: rooster eerst, automatische mail en maandchurn veel later.
+        Gebouwd betekent beschikbaar in de code; praktijkcontroles blijven
+        apart.
       </p>
     </div>
   );

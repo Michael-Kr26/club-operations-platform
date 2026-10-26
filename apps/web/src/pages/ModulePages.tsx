@@ -1,3 +1,4 @@
+import { LocalMaintenancePanel } from '../operations/LocalMaintenancePanel';
 import { useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { organizationPreviews } from '../organizations/mockOrganizations';
@@ -558,9 +559,9 @@ export function SettingsPage() {
         ))}
       </div>
       <p className="muted">
-        Instellingen zijn in deze paginaopzet alleen ter inzage; wijzigen en
-        opslaan volgen later.
+        De organisatie-instellingen hierboven zijn alleen ter inzage.
       </p>
+      <LocalMaintenancePanel />
     </Page>
   );
 }

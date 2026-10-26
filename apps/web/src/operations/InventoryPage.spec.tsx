@@ -118,10 +118,17 @@ describe('voorraadbeheer', () => {
     fireEvent.change(screen.getByLabelText('Artikelnaam'), {
       target: { value: 'Sportfles' },
     });
+    fireEvent.change(screen.getByLabelText('Kleur (optioneel)'), {
+      target: { value: 'Blauw' },
+    });
     fireEvent.click(
       screen.getByRole('button', { name: 'Artikel toevoegen aan overzicht' }),
     );
     expect(screen.getByLabelText('Sportfles aantal')).toHaveValue(null);
+    expect(screen.getByLabelText('Sportfles kleur')).toHaveValue('Blauw');
+    fireEvent.change(screen.getByLabelText('Sportfles kleur'), {
+      target: { value: 'Zwart/oranje' },
+    });
     fireEvent.change(screen.getByLabelText('Sportfles aantal'), {
       target: { value: '5' },
     });
@@ -137,8 +144,12 @@ describe('voorraadbeheer', () => {
       expect.objectContaining({
         name: 'Sportfles',
         category: 'merch',
+        color: 'Zwart/oranje',
         quantities: { total: 5 },
       }),
+    );
+    expect(screen.getByLabelText('Sportfles kleur')).toHaveValue(
+      'Zwart/oranje',
     );
   });
   it('gebruikt organisatie en dataset uit de route en respecteert leesrechten', async () => {

@@ -9,6 +9,8 @@ import {
   Query,
   Req,
   BadRequestException,
+  ForbiddenException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import type {
@@ -45,6 +47,50 @@ function headers(req: FastifyRequest) {
 @Controller('organizations/:organizationId/operations')
 export class OperationsController {
   constructor(@Inject(ReportingService) private reports: ReportingService) {}
+  private async maintenance(req: FastifyRequest, org: string, create = false) {
+    const principal = await this.access(req, org, 'operations.manage');
+    if (
+      principal.userId !== 'local-device-owner' ||
+      principal.locations !== null ||
+      process.env.COP_STORAGE_MODE !== 'pglite-local' ||
+      process.env.HOST !== '127.0.0.1' ||
+      process.env.NODE_ENV === 'production'
+    )
+      throw new ForbiddenException(
+        'Lokaal beheer is uitsluitend voor de lokale apparaateigenaar.',
+      );
+    const base = process.env.COP_MAINTENANCE_URL;
+    const token = process.env.COP_MAINTENANCE_TOKEN;
+    if (!base || !token || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base))
+      throw new ServiceUnavailableException(
+        'Herstart COP met de bijgewerkte lokale starter om back-ups te gebruiken.',
+      );
+    try {
+      const result = await fetch(`${base}/${create ? 'backup' : 'status'}`, {
+        method: create ? 'POST' : 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(120000),
+      });
+      if (!result.ok) throw new Error('backup');
+      return await result.json();
+    } catch {
+      throw new ServiceUnavailableException(
+        'Back-upbeheer niet bereikbaar. Controleer de lokale start, opslagruimte en maprechten.',
+      );
+    }
+  }
+  @Get('local-maintenance') maintenanceStatus(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+  ) {
+    return this.maintenance(req, org);
+  }
+  @Post('local-maintenance/backup') backup(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') org: string,
+  ) {
+    return this.maintenance(req, org, true);
+  }
   private access(
     req: FastifyRequest,
     org: string,

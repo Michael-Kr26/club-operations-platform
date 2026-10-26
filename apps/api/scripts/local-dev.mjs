@@ -9,6 +9,9 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { once } from 'node:events';
 import { startLocalDatabase } from './local-database.mjs';
+import { startBackupManager } from './local-backups.mjs';
+import { mkdir, copyFile, unlink, access } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { startupDiagnostic } from './startup-diagnostics.mjs';
 
 // pnpm --filter starts this script in apps/api. Use the same working directory
@@ -29,11 +32,14 @@ const vite = join(
 );
 const children = [];
 let database,
+  backupManager,
   stopping = false;
 let phase = 'database starten en migreren';
+let stopTimer;
 async function stop(code = 0) {
   if (stopping) return;
   stopping = true;
+  clearInterval(stopTimer);
   await Promise.all(
     children.map(async (child) => {
       if (child.exitCode !== null || child.signalCode !== null) return;
@@ -44,6 +50,7 @@ async function stop(code = 0) {
       clearTimeout(timer);
     }),
   );
+  await backupManager?.close();
   await database?.close();
   console.log('COP netjes gestopt.');
   process.exitCode = code;
@@ -85,12 +92,47 @@ try {
     'Lokale database starten en migraties uitvoeren (zonder Docker)…',
   );
   database = await startLocalDatabase(directory);
+  if (process.env.COP_STOP_FILE) {
+    const stopFile = process.env.COP_STOP_FILE;
+    await unlink(stopFile).catch((error) => {
+      if (error.code !== 'ENOENT') throw error;
+    });
+    stopTimer = setInterval(() => {
+      void access(stopFile)
+        .then(async () => {
+          await unlink(stopFile);
+          await stop();
+        })
+        .catch(() => undefined);
+    }, 1000);
+    stopTimer.unref();
+  }
+  backupManager = await startBackupManager(
+    database.db,
+    process.env.COP_BACKUP_DIR ?? join(directory, 'backups'),
+  );
+  const importDirectory =
+    process.env.COP_IMPORT_FOLDER ?? defaultImportFolder();
+  for (const folder of ['omzet', 'registratie', 'statusrapporten'])
+    await mkdir(join(importDirectory, folder), { recursive: true });
+  // Preserve the previous workbook while making a one-time copy at the new location.
+  if (process.env.COP_HEALTHPLANNER_FILE === undefined) {
+    await copyFile(
+      join(defaultImportFolder(), 'Healthplanner_leden_updates.xlsx'),
+      defaultHealthplannerFile(),
+      constants.COPYFILE_EXCL,
+    ).catch((error) => {
+      if (!['ENOENT', 'EEXIST'].includes(error.code)) throw error;
+    });
+  }
   console.log('Lokale database en migraties klaar.');
   phase = 'API starten';
   const env = {
     ...process.env,
     DATABASE_URL: database.connectionString,
     COP_DATA_DIR: directory,
+    COP_MAINTENANCE_URL: backupManager.url,
+    COP_MAINTENANCE_TOKEN: backupManager.token,
     COP_STORAGE_MODE: 'pglite-local',
     COP_IMPORT_FOLDER: process.env.COP_IMPORT_FOLDER ?? defaultImportFolder(),
     COP_IMPORT_ORGANIZATION:

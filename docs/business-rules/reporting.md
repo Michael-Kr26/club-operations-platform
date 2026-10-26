@@ -1,5 +1,17 @@
 # Voorstelcatalogus managementrapportages
 
+## Bronkeuzes bevestigd op 26 oktober 2026
+
+Michael heeft vastgelegd: leden zijn mensen met een contract in Dewi; Dewi
+is de leidende ledenbron. Wekelijks worden vijf statusrapporten aangeleverd in
+`imports/statusrapporten`, bijvoorbeeld `forecast-Bveld-2644.xlsx`. De bestaande
+forecast-import toont de aangeleverde uitstroom met de bronperiode. De naam
+bewijst geen weekdekking, actuele contractstatus of effectieve einddatum.
+De volledige maandchurnberekening en echte mailverzending zijn uitgesteld.
+Deze bronkeuze keurt de onderstaande churnformules niet automatisch goed.
+
+## Voorstellen voor berekeningen
+
 Versie `proposal-1`, 7 oktober 2026. Eigenaar/reviewer: Chico (Sport Society). Status van alle onderstaande bedrijfsregels: **voorstel, nog geen definitieve praktijkregel**. De applicatie markeert resultaten als voorlopig tot een lokale beheerder deze versie organisatiegebonden goedkeurt. Goedkeuring wordt geaudit met actor en moment. Aanpassen van definities vereist een nieuwe versie en nieuwe goedkeuring.
 
 Bron: Chico’s WhatsApp 7 oktober 09:39–09:40 en expliciete moduleopdracht. De exportbestanden bevestigen niet alle betekenissen; die staan in `docs/reporting/sources.md`. Het bestaande Healthplanner-overzicht bevat bezoekers van andere clubs volgens de gebruiker.

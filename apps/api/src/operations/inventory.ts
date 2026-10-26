@@ -85,6 +85,14 @@ function validate(input: unknown): InventoryItem[] {
       )
     )
       throw new BadRequestException('Categorie ontbreekt.');
+    if (
+      value.color !== undefined &&
+      value.color !== null &&
+      (typeof value.color !== 'string' || value.color.length > 60)
+    )
+      throw new BadRequestException(
+        'Gebruik een kleur van maximaal 60 tekens.',
+      );
     const quantities = value.quantities;
     if (
       !quantities ||
@@ -120,6 +128,14 @@ function validate(input: unknown): InventoryItem[] {
       id: value.id,
       name: value.name.trim(),
       category: value.category as InventoryItem['category'],
+      ...(value.color !== undefined
+        ? {
+            color:
+              typeof value.color === 'string'
+                ? value.color.trim() || null
+                : null,
+          }
+        : {}),
       quantities: cleaned,
     };
   });

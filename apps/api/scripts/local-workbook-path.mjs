@@ -16,6 +16,7 @@ export function defaultHealthplannerFile(
 ) {
   return (platform === 'win32' ? win32 : posix).join(
     defaultImportFolder(platform, project),
+    'registratie',
     'Healthplanner_leden_updates.xlsx',
   );
 }

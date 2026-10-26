@@ -8,7 +8,10 @@ import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
 const dbRequire = createRequire(
   new URL('../../../packages/db/package.json', import.meta.url),
 );
-export async function startLocalDatabase(directory, { port = 5433 } = {}) {
+export async function startLocalDatabase(
+  directory,
+  { port = 5433, migrate: runMigrations = true } = {},
+) {
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const lockFile = join(directory, 'pglite-local.lock');
   let lock;
@@ -52,11 +55,12 @@ export async function startLocalDatabase(directory, { port = 5433 } = {}) {
     const { migrate } = await import(
       pathToFileURL(dbRequire.resolve('drizzle-orm/pglite/migrator')).href
     );
-    await migrate(drizzle(db), {
-      migrationsFolder: fileURLToPath(
-        new URL('../../../packages/db/migrations/', import.meta.url),
-      ),
-    });
+    if (runMigrations)
+      await migrate(drizzle(db), {
+        migrationsFolder: fileURLToPath(
+          new URL('../../../packages/db/migrations/', import.meta.url),
+        ),
+      });
     server = new PGLiteSocketServer({
       db,
       port,
