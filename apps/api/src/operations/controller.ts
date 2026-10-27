@@ -149,6 +149,11 @@ export class OperationsController {
         (r) => r.kind === 'checklist',
       ) as ChecklistRecord[],
       assets: records.filter((r) => r.kind === 'asset') as AssetRecord[],
+      rosterTemplates: await this.reports.operations.rosterTemplates(
+        org,
+        principal,
+        dataset,
+      ),
       reports,
       warnings: [
         'Personeelsbezetting is geplande inzet. Een les of PT-dienst telt niet als beschikbare vloertijd. Bezettingsnormen zijn nog niet ingesteld.',
@@ -195,6 +200,42 @@ export class OperationsController {
         body.dataset,
       );
     return result;
+  }
+  @Post('shifts/copy') async copyShift(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') orgId: string,
+    @Body() body: Parameters<OperationsStore['copyShift']>[2],
+  ) {
+    const principal = await this.access(req, orgId, 'operations.manage');
+    return this.reports.operations.copyShift(
+      await this.reports.organization(orgId),
+      principal,
+      body,
+    );
+  }
+  @Post('roster-templates/save') async saveRosterTemplate(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') orgId: string,
+    @Body() body: Parameters<OperationsStore['saveRosterTemplate']>[2],
+  ) {
+    const principal = await this.access(req, orgId, 'operations.manage');
+    return this.reports.operations.saveRosterTemplate(
+      await this.reports.organization(orgId),
+      principal,
+      body,
+    );
+  }
+  @Post('roster-templates/apply') async applyRosterTemplate(
+    @Req() req: FastifyRequest,
+    @Param('organizationId') orgId: string,
+    @Body() body: Parameters<OperationsStore['applyRosterTemplate']>[2],
+  ) {
+    const principal = await this.access(req, orgId, 'operations.manage');
+    return this.reports.operations.applyRosterTemplate(
+      await this.reports.organization(orgId),
+      principal,
+      body,
+    );
   }
   @Get('members') async members(
     @Req() req: FastifyRequest,

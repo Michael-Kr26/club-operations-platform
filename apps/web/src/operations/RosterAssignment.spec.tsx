@@ -249,9 +249,9 @@ it('vult na slepen de juiste medewerker, locatie en dag in en bewaart pas na ing
       shiftType: 'internship',
     },
   });
-  expect(screen.getByRole('button', { name: /09:15–13:45/ })).toHaveTextContent(
-    'Stage',
-  );
+  expect(
+    screen.getByRole('button', { name: /^09:15–13:45/ }),
+  ).toHaveTextContent('Stage');
 });
 it('ondersteunt inplannen zonder slepen en initialiseert een volgende dienst opnieuw', async () => {
   setup();

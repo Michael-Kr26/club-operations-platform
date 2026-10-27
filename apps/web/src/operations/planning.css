@@ -4,6 +4,44 @@
   min-width: 0;
   color: var(--cop-ink);
 }
+.roster-shift-card {
+  margin-bottom: 8px;
+}
+.roster-copy-shift {
+  min-height: 32px;
+  padding: 4px 7px;
+  border: 1px solid var(--cop-line);
+  border-radius: 6px;
+  background: var(--cop-surface);
+  color: var(--cop-blue);
+  font: inherit;
+  font-size: 12px;
+}
+.roster-actions {
+  display: grid;
+  gap: 12px;
+}
+.roster-actions p {
+  margin: 0;
+  line-height: 1.6;
+}
+.roster-action-form {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--cop-line);
+  border-radius: 10px;
+  background: var(--cop-surface);
+  scroll-margin-top: 90px;
+}
+.roster-action-form > label {
+  max-width: 340px;
+}
+@media (pointer: coarse) {
+  .roster-copy-shift {
+    min-height: 44px;
+  }
+}
 .roster-period {
   margin: 4px 0 0;
   color: var(--cop-muted);

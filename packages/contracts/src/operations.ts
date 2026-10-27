@@ -88,6 +88,7 @@ export type ChecklistRecord = OperationRecord<'checklist', ChecklistData>;
 export type AssetRecord = OperationRecord<'asset', AssetData>;
 export type ContactRecord = OperationRecord<'contact', ContactData>;
 export interface OperationsWorkspace {
+  rosterTemplates?: RosterTemplateSummary[];
   organization: ReportOrganization;
   principal: Principal;
   dataset: Dataset;
@@ -98,6 +99,25 @@ export interface OperationsWorkspace {
   assets: AssetRecord[];
   reports: ForecastDashboard | null;
   warnings: string[];
+}
+export interface RosterTemplateSummary {
+  id: string;
+  locationId: string;
+  version: number;
+  sourceWeek: string;
+  shiftCount: number;
+  updatedAt: string;
+}
+export interface RosterTemplateEntry extends Omit<
+  ShiftData,
+  'date' | 'status'
+> {
+  sourceId: string;
+  day: number;
+}
+export interface RosterCopyResult {
+  created: number;
+  skipped: number;
 }
 export interface DirectoryMember {
   key: string;

@@ -20,6 +20,9 @@ import type {
   AssetData,
   ContactData,
   OperationData,
+  RosterTemplateEntry,
+  RosterTemplateSummary,
+  RosterCopyResult,
 } from '@cop/contracts';
 import { dateOnly } from '../reporting/calculation.js';
 
@@ -116,6 +119,328 @@ function record(row: Record<string, unknown>): OperationRecord {
 
 export class OperationsStore {
   constructor(readonly pool: Pool) {}
+  async rosterTemplates(
+    org: ReportOrganization,
+    principal: Principal,
+    dataset: Dataset,
+  ): Promise<RosterTemplateSummary[]> {
+    operationScope(principal, org.id);
+    choice(dataset, ['real', 'demo']);
+    const rows = await this.pool.query(
+      'SELECT id,location_id,version,source_week,jsonb_array_length(entries) AS shift_count,updated_at FROM operation_roster_templates WHERE organization_id=$1 AND dataset=$2 AND ($3::text[] IS NULL OR location_id=ANY($3)) ORDER BY location_id',
+      [org.id, dataset, principal.locations],
+    );
+    return rows.rows
+      .filter((row) => org.locations.some((l) => l.id === row.location_id))
+      .map((row) => ({
+        id: row.id,
+        locationId: row.location_id,
+        version: row.version,
+        sourceWeek: row.source_week,
+        shiftCount: row.shift_count,
+        updatedAt: row.updated_at.toISOString(),
+      }));
+  }
+  private rosterWeek(value: unknown) {
+    const result = date(value, true)!;
+    if (new Date(result + 'T00:00:00Z').getUTCDay() !== 1)
+      throw new BadRequestException('Kies de maandag van de week.');
+    return result;
+  }
+  private addDays(value: string, days: number) {
+    return new Date(Date.parse(value + 'T00:00:00Z') + days * 86400000)
+      .toISOString()
+      .slice(0, 10);
+  }
+  private async rosterTransaction<T>(
+    org: ReportOrganization,
+    principal: Principal,
+    dataset: Dataset,
+    action: (client: PoolClient) => Promise<T>,
+  ) {
+    operationScope(principal, org.id, true);
+    choice(dataset, ['real', 'demo']);
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
+        org.id + ':' + dataset + ':operations',
+      ]);
+      const result = await action(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+  private async insertRosterShift(
+    client: PoolClient,
+    org: ReportOrganization,
+    principal: Principal,
+    dataset: Dataset,
+    locationId: string,
+    data: ShiftData,
+    key: string,
+  ): Promise<boolean> {
+    locationScope(principal, org, locationId);
+    const previous = await client.query(
+      "SELECT id FROM operation_records WHERE organization_id=$1 AND dataset=$2 AND kind='shift' AND source_key=$3",
+      [org.id, dataset, key],
+    );
+    if (previous.rows.length) return false;
+    const cleaned = await this.validate(client, org, principal, {
+      kind: 'shift',
+      dataset,
+      locationId,
+      data: { ...data, status: 'draft' },
+    });
+    const id = randomUUID();
+    await client.query(
+      "INSERT INTO operation_records(id,organization_id,dataset,location_id,kind,data,source_key,updated_by) VALUES($1,$2,$3,$4,'shift',$5,$6,$7)",
+      [
+        id,
+        org.id,
+        dataset,
+        locationId,
+        JSON.stringify(cleaned),
+        key,
+        principal.userId,
+      ],
+    );
+    await client.query(
+      'INSERT INTO report_audit(id,organization_id,actor,action,detail) VALUES($1,$2,$3,$4,$5)',
+      [
+        randomUUID(),
+        org.id,
+        principal.userId,
+        'operations.shift-copied',
+        JSON.stringify({ recordId: id, locationId, dataset }),
+      ],
+    );
+    return true;
+  }
+  async copyShift(
+    org: ReportOrganization,
+    principal: Principal,
+    body: { dataset: Dataset; id: string; version: number; date: string },
+  ): Promise<RosterCopyResult> {
+    if (!body) throw new BadRequestException('Kopieergegevens ontbreken.');
+    const target = date(body.date, true)!;
+    return this.rosterTransaction(
+      org,
+      principal,
+      body.dataset,
+      async (client) => {
+        const source = await client.query(
+          "SELECT * FROM operation_records WHERE organization_id=$1 AND dataset=$2 AND kind='shift' AND id=$3",
+          [org.id, body.dataset, text(body.id, 200, true)],
+        );
+        if (!source.rows[0])
+          throw new NotFoundException('Dienst niet gevonden.');
+        const original = record(source.rows[0]);
+        locationScope(principal, org, original.locationId);
+        if (original.version !== body.version)
+          throw new ConflictException(
+            'De dienst is gewijzigd. Vernieuw het rooster voordat je kopieert.',
+          );
+        const data = original.data as ShiftData;
+        if (data.status === 'cancelled')
+          throw new BadRequestException(
+            'Een geannuleerde dienst kan niet worden gekopieerd.',
+          );
+        if (data.date === target)
+          throw new BadRequestException(
+            'Kies een andere dag dan de oorspronkelijke dienst.',
+          );
+        const added = await this.insertRosterShift(
+          client,
+          org,
+          principal,
+          body.dataset,
+          original.locationId,
+          { ...data, date: target, status: 'draft' },
+          `copy:${original.id}:${target}`,
+        );
+        return { created: added ? 1 : 0, skipped: added ? 0 : 1 };
+      },
+    );
+  }
+  async saveRosterTemplate(
+    org: ReportOrganization,
+    principal: Principal,
+    body: {
+      dataset: Dataset;
+      locationId: string;
+      from: string;
+      version: number;
+    },
+  ) {
+    if (!body) throw new BadRequestException('Basisrooster ontbreekt.');
+    const from = this.rosterWeek(body.from);
+    locationScope(principal, org, body.locationId);
+    if (!Number.isInteger(body.version) || body.version < 0)
+      throw new BadRequestException('Versienummer ontbreekt.');
+    return this.rosterTransaction(
+      org,
+      principal,
+      body.dataset,
+      async (client) => {
+        const previous = await client.query(
+          'SELECT id,version FROM operation_roster_templates WHERE organization_id=$1 AND dataset=$2 AND location_id=$3 FOR UPDATE',
+          [org.id, body.dataset, body.locationId],
+        );
+        if ((previous.rows[0]?.version ?? 0) !== body.version)
+          throw new ConflictException(
+            'Het basisrooster is gewijzigd. Vernieuw het overzicht.',
+          );
+        const rows = await client.query(
+          "SELECT * FROM operation_records WHERE organization_id=$1 AND dataset=$2 AND location_id=$3 AND kind='shift' AND data->>'date'>=$4 AND data->>'date'<=$5 AND data->>'status'<>'cancelled' ORDER BY data->>'date',data->>'start',id",
+          [org.id, body.dataset, body.locationId, from, this.addDays(from, 6)],
+        );
+        if (!rows.rows.length || rows.rows.length > 500)
+          throw new BadRequestException(
+            'Bewaar een week met 1 tot 500 diensten als basisrooster.',
+          );
+        const entries: RosterTemplateEntry[] = rows.rows.map((row) => {
+          const source = record(row),
+            data = source.data as ShiftData;
+          return {
+            sourceId: source.id,
+            day: Math.round(
+              (Date.parse(data.date) - Date.parse(from)) / 86400000,
+            ),
+            employeeId: data.employeeId,
+            start: data.start,
+            end: data.end,
+            shiftType: data.shiftType ?? 'allround',
+            activity: data.activity,
+            notes: data.notes,
+          };
+        });
+        const id = previous.rows[0]?.id ?? randomUUID();
+        await client.query(
+          'INSERT INTO operation_roster_templates(id,organization_id,dataset,location_id,source_week,entries,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(organization_id,dataset,location_id) DO UPDATE SET source_week=excluded.source_week,entries=excluded.entries,version=operation_roster_templates.version+1,updated_at=now(),updated_by=excluded.updated_by',
+          [
+            id,
+            org.id,
+            body.dataset,
+            body.locationId,
+            from,
+            JSON.stringify(entries),
+            principal.userId,
+          ],
+        );
+        await client.query(
+          'INSERT INTO report_audit(id,organization_id,actor,action,detail) VALUES($1,$2,$3,$4,$5)',
+          [
+            randomUUID(),
+            org.id,
+            principal.userId,
+            'operations.roster-template-saved',
+            JSON.stringify({
+              templateId: id,
+              locationId: body.locationId,
+              dataset: body.dataset,
+              version: body.version + 1,
+              shiftCount: entries.length,
+            }),
+          ],
+        );
+        return { shiftCount: entries.length, version: body.version + 1 };
+      },
+    );
+  }
+  async applyRosterTemplate(
+    org: ReportOrganization,
+    principal: Principal,
+    body: {
+      dataset: Dataset;
+      locationId: string;
+      weekStart: string;
+      weeks: number;
+      version: number;
+    },
+  ): Promise<RosterCopyResult> {
+    if (!body) throw new BadRequestException('Basisrooster ontbreekt.');
+    const start = this.rosterWeek(body.weekStart);
+    locationScope(principal, org, body.locationId);
+    if (!Number.isInteger(body.weeks) || body.weeks < 1 || body.weeks > 12)
+      throw new BadRequestException('Kies 1 tot 12 weken vooruit.');
+    return this.rosterTransaction(
+      org,
+      principal,
+      body.dataset,
+      async (client) => {
+        const found = await client.query(
+          'SELECT id,version,entries FROM operation_roster_templates WHERE organization_id=$1 AND dataset=$2 AND location_id=$3',
+          [org.id, body.dataset, body.locationId],
+        );
+        if (!found.rows[0])
+          throw new NotFoundException(
+            'Bewaar eerst een basisrooster voor deze locatie.',
+          );
+        const template = found.rows[0];
+        if (template.version !== body.version)
+          throw new ConflictException(
+            'Het basisrooster is gewijzigd. Vernieuw het overzicht.',
+          );
+        const entries = template.entries as RosterTemplateEntry[];
+        const result = { created: 0, skipped: 0 };
+        for (let week = 0; week < body.weeks; week++) {
+          const from = this.addDays(start, week * 7);
+          const slots = entries.map((entry) => ({
+            entry,
+            date: this.addDays(from, entry.day),
+            key: `template:${template.id}:${entry.sourceId}:${this.addDays(from, entry.day)}`,
+          }));
+          const existing = await client.query(
+            "SELECT source_key,data FROM operation_records WHERE organization_id=$1 AND dataset=$2 AND location_id=$3 AND kind='shift' AND data->>'date'>=$4 AND data->>'date'<=$5",
+            [
+              org.id,
+              body.dataset,
+              body.locationId,
+              from,
+              this.addDays(from, 6),
+            ],
+          );
+          const keys = new Set(existing.rows.map((row) => row.source_key));
+          if (slots.every((slot) => keys.has(slot.key))) {
+            result.skipped += slots.length;
+            continue;
+          }
+          if (existing.rows.some((row) => row.data.status !== 'cancelled'))
+            throw new ConflictException(
+              `De week van ${from} bevat al diensten. Pas die week handmatig aan of kies een lege week. Er is niets toegevoegd.`,
+            );
+          for (const slot of slots) {
+            const added = await this.insertRosterShift(
+              client,
+              org,
+              principal,
+              body.dataset,
+              body.locationId,
+              {
+                employeeId: slot.entry.employeeId,
+                date: slot.date,
+                start: slot.entry.start,
+                end: slot.entry.end,
+                activity: slot.entry.activity,
+                shiftType: slot.entry.shiftType,
+                notes: slot.entry.notes,
+                status: 'draft',
+              },
+              slot.key,
+            );
+            result[added ? 'created' : 'skipped']++;
+          }
+        }
+        return result;
+      },
+    );
+  }
   async list(
     principal: Principal,
     dataset: Dataset,

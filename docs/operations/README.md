@@ -63,6 +63,16 @@ Een dienst heeft het aparte type **Allround**, **Gastheer**, **Clubmanager** of 
 
 Met **Agenda** wisselt de planner naar een verticale lijst, te filteren op medewerker en definitieve diensten. Op schermen tot 700 pixels wordt de agenda automatisch gebruikt, zodat geen breed rooster nodig is. Diensten en notities zijn ook met leesrechten te openen. Deze agenda gebruikt de bestaande organisatie- en locatierechten; het is nog geen persoonlijk medewerkersportaal. Persoonlijke login/accountkoppeling, beschikbaarheidsregistratie en wisselaanvragen zijn nog niet gebouwd.
 
+### Diensten kopiëren en een vast weekrooster gebruiken
+
+Klik bij een dienst op **Kopiëren**, kies **Naar dag** en klik **Kopie opslaan**. Medewerker, locatie, tijden, diensttype, werkzaamheid en notitie worden overgenomen. De kopie is een concept en kan daarna afzonderlijk worden aangepast. De oorspronkelijke dienst blijft staan. Dezelfde dienst opnieuw naar dezelfde dag kopiëren maakt geen duplicaat. Geannuleerde diensten kunnen niet als bron worden gebruikt; overlap met andere diensten wordt ook tussen locaties gecontroleerd.
+
+Kies één locatie en maak een voorbeeldweek. Klik **Basisrooster bewaren** en **Bewaar deze week** om die maandag–zondag als vast weekrooster op te slaan. Er is één basisrooster per locatie en per Werkelijk/Demo-dataset; geannuleerde diensten worden overgeslagen. Opnieuw bewaren vervangt het basisrooster, zonder eerder ingeplande weken te wijzigen.
+
+Klik **Basisrooster toepassen**, kies een maandag en **Aantal weken** (1–12) en klik **Weken klaarzetten**. COP maakt de diensten als concept in lege weken; daarna pas je per week de uitzonderingen aan en maak je diensten definitief. Dit zet een gekozen periode vooruit klaar; er is geen automatische, onbeperkte herhaling. Een week die al volledig uit hetzelfde basisrooster is gemaakt, wordt overgeslagen, inclusief de aanpassingen en annuleringen die je daarna hebt gemaakt. Een week met andere bestaande diensten wordt geweigerd. Bij een conflict wordt de hele aanvraag teruggedraaid, ook als je meerdere weken tegelijk koos. Niet meer inzetbare medewerkers of overlap moeten eerst worden opgelost.
+
+Het basisrooster wordt blijvend in de database bewaard. De lokale starter voert migratie `0007_roster_templates` bij de eerstvolgende herstart automatisch uit. Herstart COP met de gebruikelijke `pnpm.cmd dev:local` om de nieuwe serverfuncties te laden.
+
 ### Lichte en donkere stijl
 
 Bovenin COP staat de knop **Licht / Donker**, ook op mobiel. De keuze geldt voor de hele werkruimte, wordt per browser bewaard en komt na herladen terug. Zonder opgeslagen keuze gebruikt COP bij openen de systeemvoorkeur. De schakelaar blijft bruikbaar als browseropslag is geblokkeerd; de keuze blijft dan alleen in het open scherm behouden.
@@ -102,6 +112,8 @@ Updates gebruiken versienummers: wanneer twee schermen hetzelfde record verander
 `pnpm.cmd verify` controleert formattering, lint, types, tests en builds. Integratietests gebruiken de echte lokale PostgreSQL-protocolopslag en controleren scopes, rechten, versies, bronverificatie, dubbele taken, gelijktijdige roosterconflicten, vaardigheden, datumgrenzen, terugkerende taken en contacthistorie. Componenttests controleren leesrechten, onbekende waarden, ledenfilters en checklistbediening. Een volledige lokale start/import/bewerking/herstart wordt daarnaast met HTTP gecontroleerd. Browseropmaak is niet met een geautomatiseerde visuele browsertest vastgesteld.
 
 Controle bij de rooster-/thema-update van 27 oktober 2026: alle 58 webtests en de 7 operationele servertests slagen, evenals lint, types en builds. Met een aparte synthetische database zijn een Stage-dienst, gewijzigde tijden, opslag na herladen, mobiele agendafilters op 320 pixels en licht/donker op rooster, voorraad en rapportages gecontroleerd. De volledige API-testset heeft daarnaast twee bestaande problemen buiten deze wijziging: `storage.spec.ts` initialiseert de voorraadtabel niet en `payment-pdf.spec.ts` vindt een PDF niet in de importscan. Deze bestanden zijn bij deze opdracht niet gewijzigd. De repositorybrede formatcontrole meldt ook de bestaande `0006_snapshot.json`; de bestanden van deze wijziging zijn wel apart gecontroleerd.
+
+Controle bij kopiëren en basisroosters, eveneens 27 oktober 2026: alle 64 webtests en 15 operationele servertests slagen. De nieuwe tests controleren onder meer gelijktijdig kopiëren, organisatie-/locatie-/datasetrechten, versies, overlap tussen clubs, kalenderdagen rond de zomertijdwissel, blijvende sjabloonopslag, het behouden van weekaanpassingen en annuleringen en het volledig terugdraaien van meerdere weken bij een conflict. Een aparte browsercontrole met synthetische gegevens bevestigt losse kopieën, twee conceptweken, behoud na herladen, herhaald toepassen zonder duplicaten en de formulieren op 320 pixels zonder horizontale overloop. De bestaande API-suiteproblemen hierboven vallen buiten deze wijziging.
 
 ## Voorraadbeheer
 

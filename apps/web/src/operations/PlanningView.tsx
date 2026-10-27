@@ -14,6 +14,7 @@ import type {
 } from '@cop/contracts';
 import { activityLabels, shiftTypeLabels, today } from './api';
 import './planning.css';
+import { RosterActions } from './RosterActions';
 
 const dragType = 'application/x-cop-employee';
 const hours = (minutes: number) =>
@@ -45,6 +46,8 @@ export function PlanningView({
   edit,
   create,
   teamLink,
+  root,
+  refresh,
 }: {
   workspace: OperationsWorkspace;
   location: string;
@@ -57,6 +60,8 @@ export function PlanningView({
     employeeId?: string | null,
   ) => void;
   teamLink: string;
+  root: string;
+  refresh: () => Promise<void>;
 }) {
   const [anchor, setAnchor] = useState(today());
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -67,6 +72,7 @@ export function PlanningView({
   const [agendaId, setAgendaId] = useState('');
   const [publishedOnly, setPublishedOnly] = useState(!canWrite);
   const [detail, setDetail] = useState<ShiftRecord | null>(null);
+  const [copySource, setCopySource] = useState<ShiftRecord | null>(null);
   const detailRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (detail) detailRef.current?.scrollIntoView?.({ block: 'center' });
@@ -111,27 +117,42 @@ export function PlanningView({
   const pickShift = (shift: ShiftRecord) =>
     canWrite ? edit(shift) : setDetail(shift);
   const shiftCard = (s: ShiftRecord) => (
-    <button
-      key={s.id}
-      type="button"
-      className={`roster-shift roster-shift--${s.data.status} ${s.data.employeeId === null ? 'roster-shift--open' : ''}`}
-      disabled={busy}
-      aria-label={`${s.data.start}–${s.data.end} ${shiftTypeLabels[s.data.shiftType ?? 'allround']} ${activityLabels[s.data.activity]} ${s.data.status === 'published' ? 'Definitief' : 'Concept'} ${locName(s.locationId)}`}
-      onClick={() => pickShift(s)}
-    >
-      <strong>
-        {s.data.start}–{s.data.end}
-      </strong>
-      <span className="roster-shift-type">
-        {shiftTypeLabels[s.data.shiftType ?? 'allround']}
-      </span>
-      <small>
-        {activityLabels[s.data.activity]} ·{' '}
-        {s.data.status === 'published' ? 'Definitief' : 'Concept'}
-      </small>
-      {(!location || agenda) && <small>{locName(s.locationId)}</small>}
-      {s.data.employeeId === null && <small>Open dienst</small>}
-    </button>
+    <div key={s.id} className="roster-shift-card">
+      <button
+        type="button"
+        className={`roster-shift roster-shift--${s.data.status} ${s.data.employeeId === null ? 'roster-shift--open' : ''}`}
+        disabled={busy}
+        aria-label={`${s.data.start}–${s.data.end} ${shiftTypeLabels[s.data.shiftType ?? 'allround']} ${activityLabels[s.data.activity]} ${s.data.status === 'published' ? 'Definitief' : 'Concept'} ${locName(s.locationId)}`}
+        onClick={() => pickShift(s)}
+      >
+        <strong>
+          {s.data.start}–{s.data.end}
+        </strong>
+        <span className="roster-shift-type">
+          {shiftTypeLabels[s.data.shiftType ?? 'allround']}
+        </span>
+        <small>
+          {activityLabels[s.data.activity]} ·{' '}
+          {s.data.status === 'published' ? 'Definitief' : 'Concept'}
+        </small>
+        {(!location || agenda) && <small>{locName(s.locationId)}</small>}
+        {s.data.employeeId === null && <small>Open dienst</small>}
+      </button>
+      {canWrite && (
+        <button
+          className="roster-copy-shift"
+          type="button"
+          disabled={busy}
+          aria-label={`Dienst kopiëren: ${s.data.start}–${s.data.end} op ${s.data.date} voor ${w.employees.find((e) => e.id === s.data.employeeId)?.data.name ?? 'open dienst'}`}
+          onClick={() => {
+            setCopySource(s);
+            setDetail(null);
+          }}
+        >
+          Kopiëren
+        </button>
+      )}
+    </div>
   );
   function drop(
     event: DragEvent,
@@ -339,6 +360,25 @@ export function PlanningView({
           </div>
         )}
       </div>
+      {canWrite && (
+        <RosterActions
+          key={`${root}:${w.dataset}:${location}`}
+          root={root}
+          dataset={w.dataset}
+          location={location}
+          weekStart={days[0]!}
+          template={w.rosterTemplates?.find((t) => t.locationId === location)}
+          copySource={
+            copySource && shifts.some((s) => s.id === copySource.id)
+              ? copySource
+              : null
+          }
+          closeCopy={() => setCopySource(null)}
+          refresh={refresh}
+          showWeek={setAnchor}
+          busy={busy}
+        />
+      )}
       {!agenda && (
         <section className="roster-pool" aria-label="Beschikbare medewerkers">
           <div className="operation-heading">

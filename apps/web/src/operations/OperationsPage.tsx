@@ -517,6 +517,12 @@ export function OperationsPage({ mode }: { mode: Mode }) {
           edit={edit}
           create={createShift}
           teamLink={link('team')}
+          root={root}
+          refresh={() =>
+            cache.invalidateQueries({
+              queryKey: ['operations', organizationSlug, dataset],
+            })
+          }
         />
       )}
       {mode === 'checks' && (
