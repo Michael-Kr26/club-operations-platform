@@ -36,6 +36,12 @@ export const activityLabels = {
   admin: 'Administratie',
   training: 'Opleiding',
 };
+export const shiftTypeLabels = {
+  allround: 'Allround',
+  host: 'Gastheer',
+  clubmanager: 'Clubmanager',
+  internship: 'Stage',
+};
 export const recordLabels = {
   task: 'Taak',
   employee: 'Medewerker',

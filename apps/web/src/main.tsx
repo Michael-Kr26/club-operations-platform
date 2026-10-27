@@ -5,6 +5,9 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
 import './styles.css';
+import { applyTheme, readTheme } from './theme';
+
+applyTheme(readTheme());
 
 const queryClient = new QueryClient();
 

@@ -442,6 +442,12 @@ export class OperationsStore {
       }
       case 'shift': {
         const shift: ShiftData = {
+          shiftType: choice(
+            v.shiftType ??
+              (existing?.data as ShiftData | undefined)?.shiftType ??
+              'allround',
+            ['allround', 'host', 'clubmanager', 'internship'] as const,
+          ),
           employeeId: identifier(v.employeeId),
           date: date(v.date, true)!,
           start: text(v.start, 5, true),

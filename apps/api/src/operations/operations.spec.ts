@@ -246,6 +246,44 @@ describe('lokale operationele werkruimte', () => {
       data: { ...assigned.data, status: 'cancelled' },
     });
   });
+  it('bewaart alle diensttypen en behoudt het type bij oudere clients', async () => {
+    const data = {
+      employeeId: null,
+      date: '2027-06-01',
+      start: '09:00',
+      end: '12:00',
+      activity: 'floor',
+      status: 'draft',
+      notes: '',
+    };
+    for (const shiftType of ['allround', 'host', 'clubmanager', 'internship']) {
+      const first = (await save('shift', { ...data, shiftType }))
+        .record as ShiftRecord;
+      const updated = (
+        await store.save(sportSociety, admin, {
+          kind: 'shift',
+          dataset: 'real',
+          locationId: first.locationId,
+          id: first.id,
+          version: first.version,
+          data: { ...data, notes: 'Gewijzigd zonder type' },
+        })
+      ).record as ShiftRecord;
+      expect(updated.data.shiftType).toBe(shiftType);
+      expect(
+        (
+          (await store.list(admin, 'real')).find(
+            (s) => s.id === first.id,
+          ) as ShiftRecord
+        ).data.shiftType,
+      ).toBe(shiftType);
+    }
+    const legacy = (await save('shift', data)).record as ShiftRecord;
+    expect(legacy.data.shiftType).toBe('allround');
+    await expect(
+      save('shift', { ...data, shiftType: 'not-a-type' }),
+    ).rejects.toThrow();
+  });
   it('maakt periodes herhaalbaar, bewaart snapshots en blokkeert onvolledige controles', async () => {
     const template = (
       await save('checklist', {

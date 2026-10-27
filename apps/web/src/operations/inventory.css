@@ -16,15 +16,15 @@
 .inventory-heading select {
   margin-left: 10px;
   padding: 10px;
-  border: 1px solid #c9d5e7;
+  border: 1px solid light-dark(#c9d5e7, #3b4d65);
   border-radius: 8px;
-  background: white;
+  background: var(--cop-surface);
   font: inherit;
 }
 .inventory-note {
-  background: #edf4ff;
-  color: #234778;
-  border: 1px solid #d4e2ff;
+  background: light-dark(#edf4ff, #233955);
+  color: light-dark(#234778, #8cb5ff);
+  border: 1px solid light-dark(#d4e2ff, #3b4d65);
   padding: 16px 20px;
   border-radius: 12px;
   line-height: 1.6;
@@ -37,8 +37,8 @@
 }
 .inventory-card {
   padding: 24px;
-  background: white;
-  border: 1px solid #dfe5ef;
+  background: var(--cop-surface);
+  border: 1px solid light-dark(#dfe5ef, #3b4d65);
   border-radius: 16px;
 }
 .inventory-card header {
@@ -53,8 +53,8 @@
   font-size: 21px;
 }
 .inventory-card header > span {
-  color: #235ee8;
-  background: #edf4ff;
+  color: light-dark(#235ee8, #8cb5ff);
+  background: light-dark(#edf4ff, #233955);
   border-radius: 20px;
   padding: 8px 12px;
   font-size: 13px;
@@ -67,7 +67,7 @@
 .inventory-sizes label {
   display: grid;
   gap: 10px;
-  color: #53657e;
+  color: light-dark(#53657e, #b5c3d8);
   font-size: 13px;
 }
 .inventory-sizes input {
@@ -78,9 +78,9 @@
   font: inherit;
   font-size: 15px;
   text-align: center;
-  border: 1px solid #bac7dc;
+  border: 1px solid light-dark(#bac7dc, #3b4d65);
   border-radius: 8px;
-  color: #172b49;
+  color: light-dark(#172b49, #edf3fc);
 }
 .inventory-sizes input::placeholder {
   font-size: 10px;
@@ -96,13 +96,13 @@
 }
 .inventory-save > span,
 .inventory-updated {
-  color: #53657e;
+  color: light-dark(#53657e, #b5c3d8);
   font-size: 13px;
 }
 .inventory-page input:focus-visible,
 .inventory-page button:focus-visible,
 .inventory-page select:focus-visible {
-  outline: 3px solid #235ee8;
+  outline: 3px solid var(--cop-blue);
   outline-offset: 3px;
 }
 @media (max-width: 850px) {
@@ -143,16 +143,16 @@
 }
 .inventory-empty {
   padding: 28px;
-  border: 1px dashed #bac7dc;
+  border: 1px dashed light-dark(#bac7dc, #3b4d65);
   border-radius: 14px;
-  background: #fff;
+  background: light-dark(#fff, #1d2b40);
 }
 .inventory-add {
   margin: 20px 0;
   padding: 24px;
-  border: 1px solid #cfddff;
+  border: 1px solid light-dark(#cfddff, #3b4d65);
   border-radius: 14px;
-  background: #fff;
+  background: light-dark(#fff, #1d2b40);
 }
 .inventory-add-fields {
   display: grid;
@@ -169,14 +169,14 @@
   width: 100%;
   box-sizing: border-box;
   padding: 12px;
-  border: 1px solid #bac7dc;
+  border: 1px solid light-dark(#bac7dc, #3b4d65);
   border-radius: 8px;
   font: inherit;
-  background: #fff;
+  background: light-dark(#fff, #1d2b40);
 }
 .inventory-add p {
   font-size: 13px;
-  color: #53657e;
+  color: light-dark(#53657e, #b5c3d8);
 }
 @media (max-width: 700px) {
   .inventory-add-fields {
@@ -194,7 +194,7 @@
   box-sizing: border-box;
   font: inherit;
   padding: 10px;
-  border: 1px solid #bac7dc;
+  border: 1px solid light-dark(#bac7dc, #3b4d65);
   border-radius: 8px;
 }
 .inventory-add-color {

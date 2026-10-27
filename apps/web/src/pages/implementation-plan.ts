@@ -22,7 +22,9 @@ export const implementationPlan = [
     title: 'Rooster en dagelijkse opvolging uitbreiden',
     goal: 'De dagelijkse planning krijgt voorrang op automatische mail en churn.',
     actions: [
-      'Gebouwd: locaties koppelen via Team, beschikbare medewerkers per locatie en slepen naar een roosterdag met aansluitend de diensttijden invullen.',
+      'Gebouwd: weekoverzicht per medewerker (stijl 1), locaties koppelen via Team en slepen naar de eigen roosterrij met aansluitend de diensttijden invullen.',
+      'Gebouwd: diensttypen Allround, Gastheer, Clubmanager en Stage, een mobiele agenda en een licht/donker-schakelaar.',
+      'Persoonlijke medewerkerslogin, beschikbaarheid en wisselaanvragen nog uitwerken; daarna de navigatie herzien.',
       'Weekroosters kopiëren en vaste dienstpatronen toevoegen.',
       'Verlof, ziekte, open diensten en contracturen uitwerken.',
       'Het bestaande Excelrooster onderzoeken voor import, met locatie- en afwezigheidskleuren.',

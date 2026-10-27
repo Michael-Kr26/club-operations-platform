@@ -34,6 +34,8 @@ export interface EmployeeData {
   active: boolean;
 }
 export interface ShiftData {
+  /** Older records without a type are treated as allround. */
+  shiftType?: 'allround' | 'host' | 'clubmanager' | 'internship';
   employeeId: string | null;
   date: string;
   start: string;

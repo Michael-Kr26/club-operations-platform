@@ -1,6 +1,6 @@
 # Rooster: ontwerpvoorstellen
 
-Datum: 26 oktober 2026. Status: interactieve voorstellen; nog geen gekozen of geïmplementeerde vervanging van `/planning`.
+Datum voorstellen: 26 oktober 2026. Op 27 oktober is Weekoverzicht (stijl 1) gekozen en uitgewerkt in `/planning`, met diensttypen Allround, Gastheer, Clubmanager en Stage en een licht/donker-schakelaar. Het fragment hieronder blijft het oorspronkelijke ontwerpvoorbeeld; de actuele werking staat in `docs/operations/README.md`.
 
 De bijbehorende `rooster-voorstellen.fragment.html` bevat drie originele COP-ontwerpen met fictieve voorbeeldgegevens. De ontwerpen zijn bedoeld voor de inline ontwerpviewer van Codex (variantcarousel). Ze doen geen netwerkverzoeken en wijzigen geen COP-gegevens. Een gewone browserpagina zonder de viewer toont alleen het eerste ontwerp; de viewer voegt de keuzeknop voor de drie varianten toe.
 
@@ -12,7 +12,7 @@ De bijbehorende `rooster-voorstellen.fragment.html` bevat drie originele COP-ont
 | Dienstkaarten | Ruime dagkolommen met dienstkaarten, toegewezen medewerkers en zichtbare open diensten.                                                               | De eerstvolgende dienst staat groot bovenaan, daarna de overige diensten.    | Deputy: mobiele dienstinformatie, open diensten en dienstwissels.                             |
 | Bezetting     | Eén dag per locatie, gegroepeerd per functie. Ingevulde en open diensten staan naast de benodigde bezetting.                                          | Een dagkiezer met eigen diensten en een directe ingang naar beschikbaarheid. | Papershift: plannen vanuit benodigde diensten en functies, met beschikbare medewerkers erbij. |
 
-Voorkeur: het Weekoverzicht voor de planner, gecombineerd met de mobiele startpagina van Dienstkaarten. De keuze staat nog open. Blauw blijft de hoofdkleur; oranje markeert open diensten. Licht en donker volgen de weergave van de gebruiker.
+Gekozen richting: het Weekoverzicht voor de planner, met een verticale agenda voor mobiel. De overige varianten blijven als referentie bewaard. Blauw blijft de hoofdkleur; oranje markeert open diensten. De gebruiker kan in COP zelf wisselen tussen licht en donker.
 
 ## Diensttypen
 

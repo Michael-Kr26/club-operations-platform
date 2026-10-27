@@ -16,6 +16,7 @@ import { workspaceFixture } from './fixtures';
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 function employee(
   id: string,
@@ -44,11 +45,12 @@ function employee(
 function setup(
   path = '/planning?dataset=demo&location=achterveld',
   readOnly = false,
+  shifts: OperationsWorkspace['shifts'] = [],
 ) {
   const workspace: OperationsWorkspace = {
     ...workspaceFixture(),
     dataset: 'demo',
-    shifts: [],
+    shifts,
     employees: [
       employee('Eva'),
       employee('Noor', ['barneveld']),
@@ -202,7 +204,7 @@ it('vult na slepen de juiste medewerker, locatie en dag in en bewaart pas na ing
     name: 'Eva selecteren voor een dienst',
   });
   const target = screen.getByRole('group', {
-    name: 'Roostervak Achterveld 2026-11-03',
+    name: 'Roostervak Achterveld 2026-11-03 met Eva',
   });
   const dataTransfer = dragData();
   fireEvent.dragStart(card, { dataTransfer });
@@ -224,6 +226,9 @@ it('vult na slepen de juiste medewerker, locatie en dag in en bewaart pas na ing
   fireEvent.change(screen.getByLabelText('Tot'), {
     target: { value: '13:45' },
   });
+  fireEvent.change(screen.getByLabelText('Diensttype'), {
+    target: { value: 'internship' },
+  });
   fireEvent.click(screen.getByRole('button', { name: 'Opslaan' }));
   await screen.findByText('Opgeslagen op dit apparaat.');
   const saved = JSON.parse(
@@ -241,11 +246,12 @@ it('vult na slepen de juiste medewerker, locatie en dag in en bewaart pas na ing
       date: '2026-11-03',
       start: '09:15',
       end: '13:45',
+      shiftType: 'internship',
     },
   });
-  expect(
-    screen.getByRole('button', { name: /09:15–13:45/ }),
-  ).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /09:15–13:45/ })).toHaveTextContent(
+    'Stage',
+  );
 });
 it('ondersteunt inplannen zonder slepen en initialiseert een volgende dienst opnieuw', async () => {
   setup();
@@ -274,7 +280,7 @@ it('weigert verkeerde locatie, andere dataset en onbekende of inactieve medewerk
   const { fetcher } = setup();
   await week();
   const target = screen.getByRole('group', {
-    name: 'Roostervak Achterveld 2026-11-03',
+    name: 'Roostervak Achterveld 2026-11-03 met Eva',
   });
   for (const overrides of [
     { employeeId: 'Noor' },
@@ -302,7 +308,9 @@ it('biedt bij leesrechten geen sleep- of dienstactie en negeert een geforceerde 
   expect(card).toBeDisabled();
   expect(card).toHaveAttribute('draggable', 'false');
   fireEvent.drop(
-    screen.getByRole('group', { name: 'Roostervak Achterveld 2026-11-03' }),
+    screen.getByRole('group', {
+      name: 'Roostervak Achterveld 2026-11-03 met Eva',
+    }),
     { dataTransfer: dragData() },
   );
   expect(
@@ -390,4 +398,63 @@ it('wist de medewerker als de dienst naar een niet-gekoppelde locatie wordt gewi
       { name: /Eva/ },
     ),
   ).not.toBeInTheDocument();
+});
+
+it('toont op mobiel een agenda met definitieve diensttypen en leesbare details zonder schrijfrechten', async () => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+  const base = workspaceFixture().shifts[0]!;
+  const { fetcher } = setup(undefined, true, [
+    {
+      ...base,
+      id: 'published',
+      data: {
+        ...base.data,
+        date: '2026-11-02',
+        employeeId: 'Eva',
+        shiftType: 'internship',
+        status: 'published',
+        start: '09:00',
+        end: '12:00',
+        notes: 'Neem je stageboek mee.',
+      },
+    },
+    {
+      ...base,
+      id: 'draft',
+      data: {
+        ...base.data,
+        date: '2026-11-02',
+        employeeId: 'Eva',
+        shiftType: 'clubmanager',
+        status: 'draft',
+        start: '13:00',
+        end: '17:00',
+      },
+    },
+  ]);
+  await week();
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('region', { name: 'Beschikbare medewerkers' }),
+  ).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Medewerker in agenda'), {
+    target: { value: 'Eva' },
+  });
+  expect(screen.queryByText('13:00–17:00')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /09:00–12:00 Stage/ }));
+  expect(
+    within(screen.getByRole('region', { name: 'Dienstdetails' })).getByText(
+      'Neem je stageboek mee.',
+    ),
+  ).toBeInTheDocument();
+  expect(
+    fetcher.mock.calls.every(([, options]) => options?.method !== 'POST'),
+  ).toBe(true);
 });

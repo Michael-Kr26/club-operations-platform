@@ -14,7 +14,7 @@
 }
 .workbook-toolbar p {
   margin: 0;
-  color: #65758a;
+  color: light-dark(#65758a, #b5c3d8);
 }
 .workbook-toolbar label {
   flex: 1;
@@ -33,14 +33,14 @@
   gap: 14px;
 }
 .workbook-card span {
-  color: #64748b;
+  color: light-dark(#64748b, #b5c3d8);
   font-size: 13px;
   line-height: 1.5;
 }
 .workbook-card strong {
   font-size: 28px;
   letter-spacing: -0.04em;
-  color: #172b48;
+  color: light-dark(#172b48, #edf3fc);
 }
 .workbook-visuals {
   display: grid;
@@ -55,11 +55,11 @@
   overflow: visible;
 }
 .workbook-line text {
-  fill: #65758a;
+  fill: light-dark(#65758a, #b5c3d8);
   font-family: inherit;
 }
 .workbook-muted {
-  color: #64748b;
+  color: light-dark(#64748b, #b5c3d8);
   font-size: 12px;
 }
 .workbook-bars {
@@ -104,10 +104,10 @@
   font-size: 12px;
 }
 .workbook-legend span:first-child {
-  color: var(--workbook-blue);
+  color: var(--cop-blue);
 }
 .workbook-legend span:last-child {
-  color: #a95c25;
+  color: light-dark(#a95c25, #ff9a90);
 }
 .workbook-category {
   display: grid;
@@ -120,10 +120,10 @@
   text-align: right;
 }
 .workbook-selected {
-  background: #eef4ff;
+  background: light-dark(#eef4ff, #233955);
 }
 .workbook-notes summary {
-  color: #28456b;
+  color: light-dark(#28456b, #8cb5ff);
 }
 @media (max-width: 1000px) {
   .workbook-visuals {
@@ -158,10 +158,10 @@
   display: block;
   font-size: 0.8rem;
   margin-top: 0.35rem;
-  color: #64748b;
+  color: light-dark(#64748b, #b5c3d8);
 }
 .workbook-attention {
-  border-left: 4px solid #e1a237;
+  border-left: 4px solid light-dark(#e1a237, #3b4d65);
 }
 .workbook-attention ul {
   display: grid;
@@ -228,7 +228,7 @@
     padding: 0;
     width: 100%;
     min-height: 0;
-    background: white;
+    background: var(--cop-surface);
   }
   .workbook-print-root {
     display: block;

@@ -42,9 +42,9 @@ Begin met Team: voer medewerkers, inzetbare locaties en vaardigheden in. Maak da
    blijft gekoppeld; kies eerst een andere thuislocatie als je de oude wilt loskoppelen.
 2. Open **Planning**, kies een locatie en de gewenste week. **Beschikbare medewerkers**
    toont de actieve medewerkers die aan die locatie zijn gekoppeld.
-3. Sleep een medewerkerkaart naar de gewenste dag. Het dienstformulier opent met
+3. Sleep een medewerkerkaart naar de gewenste dag in de eigen medewerkersrij. Het dienstformulier opent met
    de medewerker, locatie en datum ingevuld. Vul **Van** en **Tot** in, kies de
-   werkzaamheid en roosterstatus en klik **Opslaan**. Slepen alleen bewaart nog geen dienst.
+   diensttype, werkzaamheid en roosterstatus en klik **Opslaan**. Slepen alleen bewaart nog geen dienst.
 4. Zonder slepen: klik op de medewerkerkaart en daarna op **Dienst plannen** bij
    de gewenste dag. Deze route werkt ook met toetsenbord of op een aanraakscherm.
 
@@ -54,6 +54,20 @@ sleepoverzicht. Het overzicht bewijst geen beschikbaarheid wegens verlof of
 ziekte: die registratie volgt later. Overlappende tijden worden bij opslaan
 ook tussen clubs geweigerd. Een geweigerde dienst blijft in het formulier staan
 om de tijden te kunnen aanpassen. Leesrechten geven geen sleep- of opslagrechten.
+
+### Weekoverzicht, agenda en diensttypen
+
+Planning gebruikt het gekozen weekoverzicht (stijl 1): per locatie staan medewerkers in rijen en dagen in kolommen. Open diensten hebben een eigen rij en een oranje accent. Concepten hebben een stippellijn, definitieve diensten een doorgetrokken lijn. De uren bij medewerkers tellen de week over alle locaties waar het account toegang toe heeft; de contracturen zijn een referentie en houden nog geen rekening met pauzes, afwezigheid of reistijd. Bestaande diensten van inactieve of onbekende medewerkers blijven zichtbaar.
+
+Een dienst heeft het aparte type **Allround**, **Gastheer**, **Clubmanager** of **Stage**. De werkzaamheid (bijvoorbeeld Vloer of Groepsles) blijft apart staan en blijft bepalend voor de bestaande vaardigheidscontrole. Een diensttype geeft geen accountrechten. Oude diensten zonder type worden als Allround getoond; bij opslaan wordt het type vastgelegd in de bestaande JSON-opslag. Een oudere client die het veld weglaat behoudt bij bewerken het bestaande type. Er is geen databasemigratie nodig.
+
+Met **Agenda** wisselt de planner naar een verticale lijst, te filteren op medewerker en definitieve diensten. Op schermen tot 700 pixels wordt de agenda automatisch gebruikt, zodat geen breed rooster nodig is. Diensten en notities zijn ook met leesrechten te openen. Deze agenda gebruikt de bestaande organisatie- en locatierechten; het is nog geen persoonlijk medewerkersportaal. Persoonlijke login/accountkoppeling, beschikbaarheidsregistratie en wisselaanvragen zijn nog niet gebouwd.
+
+### Lichte en donkere stijl
+
+Bovenin COP staat de knop **Licht / Donker**, ook op mobiel. De keuze geldt voor de hele werkruimte, wordt per browser bewaard en komt na herladen terug. Zonder opgeslagen keuze gebruikt COP bij openen de systeemvoorkeur. De schakelaar blijft bruikbaar als browseropslag is geblokkeerd; de keuze blijft dan alleen in het open scherm behouden.
+
+Na deze update is een lokale herstart nodig om ook de gewijzigde server voor diensttypen te laden. Start COP weer met de gebruikelijke `pnpm.cmd dev:local`. De navigatie wordt na afronding van het rooster als afzonderlijke vervolgstap herzien.
 
 ## Bronnen en definities
 
@@ -86,6 +100,8 @@ Updates gebruiken versienummers: wanneer twee schermen hetzelfde record verander
 ## Verificatie
 
 `pnpm.cmd verify` controleert formattering, lint, types, tests en builds. Integratietests gebruiken de echte lokale PostgreSQL-protocolopslag en controleren scopes, rechten, versies, bronverificatie, dubbele taken, gelijktijdige roosterconflicten, vaardigheden, datumgrenzen, terugkerende taken en contacthistorie. Componenttests controleren leesrechten, onbekende waarden, ledenfilters en checklistbediening. Een volledige lokale start/import/bewerking/herstart wordt daarnaast met HTTP gecontroleerd. Browseropmaak is niet met een geautomatiseerde visuele browsertest vastgesteld.
+
+Controle bij de rooster-/thema-update van 27 oktober 2026: alle 58 webtests en de 7 operationele servertests slagen, evenals lint, types en builds. Met een aparte synthetische database zijn een Stage-dienst, gewijzigde tijden, opslag na herladen, mobiele agendafilters op 320 pixels en licht/donker op rooster, voorraad en rapportages gecontroleerd. De volledige API-testset heeft daarnaast twee bestaande problemen buiten deze wijziging: `storage.spec.ts` initialiseert de voorraadtabel niet en `payment-pdf.spec.ts` vindt een PDF niet in de importscan. Deze bestanden zijn bij deze opdracht niet gewijzigd. De repositorybrede formatcontrole meldt ook de bestaande `0006_snapshot.json`; de bestanden van deze wijziging zijn wel apart gecontroleerd.
 
 ## Voorraadbeheer
 

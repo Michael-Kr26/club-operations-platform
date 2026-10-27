@@ -19,26 +19,26 @@
 }
 .report-notice {
   padding: 16px 20px;
-  border: 1px solid #c9d9f7;
+  border: 1px solid light-dark(#c9d9f7, #3b4d65);
   border-radius: 12px;
-  background: #eef4ff;
-  color: #233e66;
+  background: light-dark(#eef4ff, #233955);
+  color: light-dark(#233e66, #8cb5ff);
   margin: 0;
   line-height: 1.6;
 }
 .cop-reports label {
   display: grid;
   gap: 8px;
-  color: #324969;
+  color: light-dark(#324969, #b5c3d8);
   font-size: 14px;
 }
 .cop-reports input,
 .cop-reports select {
   padding: 10px 12px;
-  border: 1px solid #d0d9e7;
+  border: 1px solid light-dark(#d0d9e7, #3b4d65);
   border-radius: 8px;
-  background: white;
-  color: #182b46;
+  background: var(--cop-surface);
+  color: light-dark(#182b46, #edf3fc);
   font: inherit;
   max-width: 100%;
   min-width: 0;
@@ -62,7 +62,7 @@
   gap: 16px;
 }
 .report-panel fieldset {
-  border: 1px solid #d5ddea;
+  border: 1px solid light-dark(#d5ddea, #3b4d65);
   border-radius: 8px;
   padding: 16px;
   display: flex;
@@ -79,30 +79,30 @@
 .cop-reports .data-table th {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #e3e9f2;
+  border-bottom: 1px solid light-dark(#e3e9f2, #3b4d65);
   vertical-align: top;
 }
 .cop-reports .data-table thead {
-  background: #f3f6fb;
+  background: light-dark(#f3f6fb, #233955);
 }
 .cop-reports .data-table th {
   font-weight: 600;
 }
 .report-unknown {
-  color: #7b6c53;
+  color: light-dark(#7b6c53, #ffb56d);
   font-style: italic;
 }
 .report-mail {
   width: 100%;
   height: 500px;
-  border: 1px solid #d5ddea;
+  border: 1px solid light-dark(#d5ddea, #3b4d65);
   border-radius: 8px;
-  background: white;
+  background: var(--cop-surface);
 }
 .cop-reports pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  background: #f4f6fa;
+  background: light-dark(#f4f6fa, #233955);
   padding: 16px;
   font-size: 13px;
 }

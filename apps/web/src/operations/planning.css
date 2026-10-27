@@ -1,0 +1,290 @@
+.roster-page {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  color: var(--cop-ink);
+}
+.roster-period {
+  margin: 4px 0 0;
+  color: var(--cop-muted);
+}
+.roster-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.roster-view-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--cop-soft);
+  border-radius: 9px;
+}
+.roster-view-switch button {
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cop-ink);
+  cursor: pointer;
+}
+.roster-view-switch button[aria-pressed='true'] {
+  background: var(--cop-surface);
+  box-shadow: 0 1px 4px #0002;
+}
+.operations-page .roster-pool {
+  padding: 16px;
+  border: 1px solid var(--cop-line);
+  background: var(--cop-surface);
+  border-radius: 10px;
+}
+.roster-pool h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.roster-pool p {
+  margin: 8px 0 14px;
+  font-size: 13px;
+  color: var(--cop-muted);
+}
+.roster-pool a {
+  color: var(--cop-blue);
+  font-size: 13px;
+}
+.roster-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.operations-page .roster-person {
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  min-width: 140px;
+  border: 1px solid var(--cop-line);
+  background: var(--cop-bg);
+  color: var(--cop-ink);
+  border-radius: 8px;
+}
+.operations-page .roster-person:disabled {
+  cursor: default;
+}
+.roster-person > span:last-child {
+  display: grid;
+  gap: 4px;
+}
+.roster-person strong {
+  color: var(--cop-ink);
+}
+.roster-person small {
+  font-size: 12px;
+  color: var(--cop-muted);
+}
+.roster-person[aria-pressed='true'] {
+  outline: 2px solid var(--cop-blue);
+  background: var(--cop-soft);
+}
+.roster-avatar {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--cop-soft);
+  color: var(--cop-blue) !important;
+  border-radius: 50%;
+  font-weight: 650;
+  flex-shrink: 0;
+}
+.roster-location {
+  min-width: 0;
+}
+.roster-location > h3 {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.roster-location > h3 small {
+  font-weight: 400;
+  color: var(--cop-orange);
+  font-size: 13px;
+}
+.roster-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--cop-line);
+  border-radius: 9px;
+}
+.roster-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: var(--cop-surface);
+  font-size: 12px;
+}
+.roster-table th,
+.roster-table td {
+  padding: 6px;
+  border-right: 1px solid var(--cop-line);
+  border-bottom: 1px solid var(--cop-line);
+  vertical-align: top;
+  text-align: left;
+}
+.roster-table th:last-child,
+.roster-table td:last-child {
+  border-right: 0;
+}
+.roster-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.roster-table thead th {
+  padding: 13px 8px;
+  background: var(--cop-bg);
+  font-weight: 600;
+}
+.roster-table th:first-child {
+  width: 130px;
+}
+.roster-table tbody th {
+  padding: 14px 10px;
+}
+.roster-table tbody th small {
+  display: block;
+  margin-top: 7px;
+  color: var(--cop-muted);
+  font-weight: 400;
+}
+.roster-table .roster-over-hours {
+  color: var(--cop-orange);
+}
+.roster-dropzone {
+  min-height: 78px;
+  border-radius: 6px;
+  padding: 2px;
+}
+.roster-dropzone--over {
+  outline: 2px dashed var(--cop-blue);
+  background: var(--cop-soft);
+}
+.operations-page .roster-shift {
+  display: grid;
+  justify-self: stretch;
+  gap: 4px;
+  padding: 8px 6px;
+  width: 100%;
+  margin: 0 0 6px;
+  border: 1px dashed var(--cop-blue);
+  border-left: 3px solid var(--cop-blue);
+  border-radius: 6px;
+  background: var(--cop-soft);
+  color: var(--cop-ink);
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.roster-shift strong {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.roster-shift small {
+  font-size: 11px;
+  line-height: 1.45;
+}
+.operations-page .roster-shift--published {
+  border-style: solid;
+}
+.operations-page .roster-shift--open {
+  background: var(--cop-warn);
+  border-color: var(--cop-orange);
+}
+.roster-shift-type {
+  font-weight: 650;
+}
+.operations-page .roster-add {
+  width: 100%;
+  min-height: 44px;
+  border: 1px dashed var(--cop-line);
+  border-radius: 6px;
+  color: var(--cop-blue);
+  background: transparent;
+  font-size: 21px;
+  cursor: pointer;
+}
+.roster-footnote,
+.roster-notes {
+  color: var(--cop-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.roster-agenda {
+  max-width: 720px;
+  width: 100%;
+}
+.roster-agenda-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.roster-agenda-filters .report-check {
+  min-height: 44px;
+}
+.roster-agenda-day {
+  margin: 0 0 24px;
+}
+.roster-agenda-item {
+  padding: 12px 0;
+  border-top: 1px solid var(--cop-line);
+}
+.roster-agenda-item p {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.roster-agenda-item .roster-shift {
+  padding: 15px;
+  gap: 6px;
+}
+.roster-agenda-item .roster-shift strong {
+  font-size: 19px;
+}
+.roster-agenda-item .roster-shift small {
+  font-size: 13px;
+}
+.roster-page button:focus-visible {
+  outline: 3px solid var(--cop-blue);
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .roster-toolbar .operation-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 10px;
+  }
+  .roster-toolbar label {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .roster-toolbar .button {
+    justify-self: stretch;
+    padding: 10px;
+    min-height: 44px;
+  }
+  .roster-agenda-filters {
+    display: grid;
+  }
+  .roster-page input,
+  .roster-page select {
+    font-size: 16px;
+  }
+  .roster-page .operation-heading {
+    gap: 12px;
+  }
+}

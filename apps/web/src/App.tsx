@@ -18,6 +18,7 @@ import { ReportsPage } from './reports/ReportsPage';
 import { useQuery } from '@tanstack/react-query';
 import type { HealthResponse } from '@cop/contracts';
 import type { ReactNode } from 'react';
+import { ThemeSwitch } from './ThemeSwitch';
 
 const roleLabels: Record<UserRole, string> = {
   admin: 'Beheerder',
@@ -338,6 +339,7 @@ export function App() {
             <strong>COP</strong>
           </div>
           <span className="muted">Club Operations Platform</span>
+          <ThemeSwitch />
           <div
             className={`api-pill ${health.isSuccess ? 'api-pill--online' : ''}`}
             role="status"

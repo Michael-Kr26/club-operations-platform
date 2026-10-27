@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type {
   OperationKind,
   OperationRecord,
   OperationsWorkspace,
 } from '@cop/contracts';
-import { activityLabels, recordLabels, today } from './api';
+import { activityLabels, recordLabels, shiftTypeLabels, today } from './api';
 function defaultData(kind: OperationKind): Record<string, unknown> {
   switch (kind) {
     case 'task':
@@ -27,6 +27,7 @@ function defaultData(kind: OperationKind): Record<string, unknown> {
       };
     case 'shift':
       return {
+        shiftType: 'allround',
         employeeId: null,
         date: today(),
         start: '08:30',
@@ -78,17 +79,23 @@ export function RecordForm({
   save: (locationId: string, data: Record<string, unknown>) => Promise<void>;
   close: () => void;
 }) {
+  const editorRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    editorRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+  }, []);
   const [location, setLocation] = useState(
     editor.locationId || workspace.organization.locations[0]?.id || '',
   );
   const initial = editor.record?.data as unknown as
     Record<string, unknown> | undefined;
   const [data, setData] = useState<Record<string, unknown>>(
-    initial ?? {
-      ...defaultData(editor.kind),
-      ...(editor.kind === 'employee' ? { locationIds: [location] } : {}),
-      ...editor.initial,
-    },
+    initial
+      ? { ...defaultData(editor.kind), ...initial }
+      : {
+          ...defaultData(editor.kind),
+          ...(editor.kind === 'employee' ? { locationIds: [location] } : {}),
+          ...editor.initial,
+        },
   );
   const [items, setItems] = useState(
       Array.isArray(data.items) ? data.items.join('\n') : '',
@@ -191,7 +198,7 @@ export function RecordForm({
     </fieldset>
   );
   return (
-    <section className="panel report-panel operation-editor">
+    <section ref={editorRef} className="panel report-panel operation-editor">
       <h2>
         {editor.employeeLocationsOnly
           ? `Locaties koppelen: ${String(data.name)}`
@@ -306,6 +313,11 @@ export function RecordForm({
           {editor.kind === 'shift' && (
             <>
               {assignment('employeeId')}
+              {select(
+                'shiftType',
+                'Diensttype',
+                Object.entries(shiftTypeLabels),
+              )}
               {input('date', 'Datum', 'date', true)}
               {input('start', 'Van', 'time', true)}
               {input('end', 'Tot', 'time', true)}

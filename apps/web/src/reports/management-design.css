@@ -1,8 +1,8 @@
 .management-design {
   --management-blue: #235ee8;
   --management-navy: #17477d;
-  --management-pale: #edf4ff;
-  color: #0f172a;
+  --management-pale: light-dark(#edf4ff, #233955);
+  color: light-dark(#0f172a, #edf3fc);
 }
 .management-design h1,
 .management-design h2,
@@ -21,24 +21,24 @@
   flex-wrap: wrap;
 }
 .management-eyebrow {
-  color: #17477d;
+  color: light-dark(#17477d, #8cb5ff);
   font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-weight: 700;
 }
 .management-note {
-  background: #edf4ff;
+  background: light-dark(#edf4ff, #233955);
   border-left: 3px solid #235ee8;
   padding: 14px 18px;
-  color: #34516e;
+  color: light-dark(#34516e, #b5c3d8);
   line-height: 1.6;
 }
 .management-attention,
 .management-design .workbook-attention {
-  background: #fff0e3;
-  border: 1px solid #f2d3ba;
-  color: #7c3915;
+  background: light-dark(#fff0e3, #473426);
+  border: 1px solid light-dark(#f2d3ba, #3b4d65);
+  color: light-dark(#7c3915, #ff9a90);
   padding: 18px;
   border-radius: 10px;
 }
@@ -52,9 +52,9 @@
   margin: 0;
   min-width: 0;
   padding: 16px;
-  border: 1px solid #dbe4f0;
+  border: 1px solid light-dark(#dbe4f0, #3b4d65);
   border-radius: 12px;
-  background: white;
+  background: var(--cop-surface);
 }
 .management-chart-grid figcaption {
   font-size: 20px;
@@ -71,7 +71,7 @@
   font:
     11px Arial,
     sans-serif;
-  fill: #52647b;
+  fill: light-dark(#52647b, #b5c3d8);
 }
 .management-chart-grid svg [role='button'] {
   cursor: pointer;
@@ -82,13 +82,13 @@
 }
 .management-chart-grid small {
   display: block;
-  color: #64748b;
+  color: light-dark(#64748b, #b5c3d8);
   font-size: 12px;
   line-height: 1.5;
   margin-top: 16px;
 }
 .management-point {
-  background: #edf4ff;
+  background: light-dark(#edf4ff, #233955);
   padding: 12px;
   min-height: 60px;
   overflow-wrap: anywhere;
@@ -112,14 +112,14 @@
   border-radius: 50%;
 }
 .management-design .workbook-card {
-  background: #edf4ff;
+  background: light-dark(#edf4ff, #233955);
 }
 .management-design .workbook-card strong {
-  color: #17477d;
+  color: light-dark(#17477d, #8cb5ff);
   font-family: Georgia, 'Times New Roman', serif;
 }
 .management-design table thead {
-  background: #edf4ff;
+  background: light-dark(#edf4ff, #233955);
 }
 .report-graphs {
   display: grid;
@@ -129,10 +129,10 @@
 .report-graphs input {
   min-height: 40px;
   padding: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid light-dark(#cbd5e1, #3b4d65);
   border-radius: 7px;
-  background: white;
-  color: #172b46;
+  background: var(--cop-surface);
+  color: light-dark(#172b46, #edf3fc);
   max-width: 100%;
 }
 .report-graphs label {
