@@ -367,7 +367,9 @@ export function PlanningView({
           dataset={w.dataset}
           location={location}
           weekStart={days[0]!}
-          template={w.rosterTemplates?.find((t) => t.locationId === location)}
+          templates={(w.rosterTemplates ?? []).filter(
+            (t) => t.locationId === location,
+          )}
           copySource={
             copySource && shifts.some((s) => s.id === copySource.id)
               ? copySource

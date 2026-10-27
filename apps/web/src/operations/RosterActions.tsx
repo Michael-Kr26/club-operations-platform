@@ -3,6 +3,7 @@ import type {
   Dataset,
   RosterCopyResult,
   RosterTemplateSummary,
+  RosterWeek,
   ShiftRecord,
 } from '@cop/contracts';
 import { activityLabels, operationsApi, shiftTypeLabels } from './api';
@@ -16,7 +17,7 @@ export function RosterActions({
   dataset,
   location,
   weekStart,
-  template,
+  templates,
   copySource,
   closeCopy,
   refresh,
@@ -27,7 +28,7 @@ export function RosterActions({
   dataset: Dataset;
   location: string;
   weekStart: string;
-  template?: RosterTemplateSummary;
+  templates: RosterTemplateSummary[];
   copySource: ShiftRecord | null;
   closeCopy: () => void;
   refresh: () => Promise<void>;
@@ -35,7 +36,11 @@ export function RosterActions({
   busy: boolean;
 }) {
   const [mode, setMode] = useState<'save' | 'apply' | null>(null);
-  const [version, setVersion] = useState(0);
+  const [versions, setVersions] = useState<Partial<Record<RosterWeek, number>>>(
+    {},
+  );
+  const [slot, setSlot] = useState<RosterWeek>('A');
+  const [alternate, setAlternate] = useState(false);
   const [start, setStart] = useState(nextDay(weekStart, 7));
   const [weeks, setWeeks] = useState(1);
   const [working, setWorking] = useState(false);
@@ -47,10 +52,23 @@ export function RosterActions({
       panel.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
   }, [copySource, mode]);
   const disabled = busy || working;
+  const template = templates.find((t) => (t.slot ?? 'A') === slot);
+  const hasBoth = ['A', 'B'].every((s) =>
+    templates.some((t) => (t.slot ?? 'A') === s),
+  );
+  const otherSlot = slot === 'A' ? 'B' : 'A';
   const open = (next: 'save' | 'apply') => {
     closeCopy();
     setMode(next);
-    setVersion(template?.version ?? 0);
+    setVersions(
+      Object.fromEntries(templates.map((t) => [t.slot ?? 'A', t.version])),
+    );
+    setSlot(
+      next === 'apply' && !templates.some((t) => (t.slot ?? 'A') === 'A')
+        ? 'B'
+        : 'A',
+    );
+    setAlternate(next === 'apply' && hasBoth);
     setStart(nextDay(weekStart, 7));
     setError('');
     setMessage('');
@@ -100,7 +118,7 @@ export function RosterActions({
         </button>
         <button
           className="button"
-          disabled={disabled || !location || !template}
+          disabled={disabled || !location || !templates.length}
           onClick={() => open('apply')}
         >
           Basisrooster toepassen
@@ -109,10 +127,23 @@ export function RosterActions({
       <p className="roster-footnote">
         {!location
           ? 'Kies één locatie om een vast weekrooster te bewaren of te gebruiken.'
-          : template
-            ? `Vast weekrooster: ${template.shiftCount} diensten · versie ${template.version}. Je kunt hiermee tot 12 weken vooruit plannen.`
-            : 'Plan eerst een basisweek en bewaar die als vast weekrooster voor deze locatie.'}
+          : 'Bewaar week A en week B voor deze locatie. Je kunt ze afwisselend tot 12 weken vooruit plannen.'}
       </p>
+      {location && (
+        <ul className="roster-basis-summary" aria-label="Bewaarde basisweken">
+          {(['A', 'B'] as const).map((s) => {
+            const saved = templates.find((t) => (t.slot ?? 'A') === s);
+            return (
+              <li key={s}>
+                Week {s}:{' '}
+                {saved
+                  ? `${saved.shiftCount} diensten · versie ${saved.version} · bronweek ${saved.sourceWeek}`
+                  : 'nog niet bewaard'}
+              </li>
+            );
+          })}
+        </ul>
+      )}
       <div ref={panel}>
         {copySource ? (
           <CopyShiftForm
@@ -153,9 +184,15 @@ export function RosterActions({
                 if (mode === 'save')
                   void request(
                     'roster-templates/save',
-                    { dataset, locationId: location, from: weekStart, version },
+                    {
+                      dataset,
+                      locationId: location,
+                      from: weekStart,
+                      slot,
+                      version: versions[slot] ?? 0,
+                    },
                     (result) =>
-                      `Basisrooster bewaard met ${result.shiftCount} diensten. Toekomstige weken kun je hiervan afleiden.`,
+                      `Basisweek ${slot} bewaard met ${result.shiftCount} diensten. Eerder ingeplande weken blijven behouden.`,
                   );
                 else
                   void request(
@@ -165,7 +202,12 @@ export function RosterActions({
                       locationId: location,
                       weekStart: start,
                       weeks,
-                      version,
+                      slot,
+                      version: versions[slot] ?? 0,
+                      alternate,
+                      ...(alternate
+                        ? { otherVersion: versions[otherSlot] ?? 0 }
+                        : {}),
                     },
                     (result) =>
                       `${result.created} diensten als concept toegevoegd; ${result.skipped} al bestaande kopieën behouden.`,
@@ -178,12 +220,35 @@ export function RosterActions({
                   ? 'Deze week als vast rooster bewaren'
                   : 'Vast weekrooster gebruiken'}
               </h3>
+              <label>
+                {mode === 'save' ? 'Bewaren als basisweek' : 'Eerste basisweek'}
+                <select
+                  value={slot}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    setSlot(event.target.value as RosterWeek)
+                  }
+                >
+                  {(['A', 'B'] as const).map((s) => (
+                    <option
+                      key={s}
+                      value={s}
+                      disabled={
+                        mode === 'apply' &&
+                        !templates.some((t) => (t.slot ?? 'A') === s)
+                      }
+                    >
+                      Week {s}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {mode === 'save' ? (
                 <p>
                   De week van {weekStart}, inclusief medewerkers, tijden,
                   diensttypen en notities.{' '}
                   {template
-                    ? 'Dit vervangt het bewaarde basisrooster. Eerder ingeplande weken veranderen niet.'
+                    ? `Dit vervangt alleen basisweek ${slot}. Eerder ingeplande weken veranderen niet.`
                     : 'Geannuleerde diensten worden niet meegenomen.'}
                 </p>
               ) : (
@@ -215,6 +280,39 @@ export function RosterActions({
                       />
                     </label>
                   </div>
+                  <label className="report-check">
+                    <input
+                      type="checkbox"
+                      checked={alternate}
+                      disabled={disabled || !hasBoth}
+                      onChange={(event) => setAlternate(event.target.checked)}
+                    />
+                    Week A en B afwisselen
+                  </label>
+                  {!hasBoth && (
+                    <p>
+                      Bewaar beide basisweken om ze af te wisselen. Nu wordt
+                      week {slot} iedere week gebruikt.
+                    </p>
+                  )}
+                  {start &&
+                    /^\d{4}-\d{2}-\d{2}$/.test(start) &&
+                    Number.isFinite(Date.parse(start + 'T00:00:00Z')) &&
+                    Number.isInteger(weeks) &&
+                    weeks >= 1 &&
+                    weeks <= 12 && (
+                      <ol
+                        className="roster-sequence"
+                        aria-label="Geplande weekvolgorde"
+                      >
+                        {Array.from({ length: weeks }, (_, index) => (
+                          <li key={index}>
+                            Vanaf {nextDay(start, index * 7)}: week{' '}
+                            {alternate && index % 2 === 1 ? otherSlot : slot}
+                          </li>
+                        ))}
+                      </ol>
+                    )}
                   <p>
                     Nieuwe diensten worden concepten in lege weken. Weken die al
                     volledig uit dit basisrooster zijn gemaakt, worden

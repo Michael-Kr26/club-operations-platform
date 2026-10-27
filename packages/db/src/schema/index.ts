@@ -285,6 +285,7 @@ export const rosterTemplates = pgTable(
       .references(() => reportOrganizations.id),
     dataset: text('dataset').notNull(),
     locationId: text('location_id').notNull(),
+    slot: text('slot').notNull().default('A'),
     sourceWeek: text('source_week').notNull(),
     entries: jsonb('entries').notNull(),
     version: integer('version').notNull().default(1),
@@ -292,11 +293,13 @@ export const rosterTemplates = pgTable(
     updatedBy: text('updated_by').notNull(),
   },
   (t) => [
-    uniqueIndex('roster_template_location').on(
+    uniqueIndex('roster_template_location_slot').on(
       t.organizationId,
       t.dataset,
       t.locationId,
+      t.slot,
     ),
     check('roster_template_dataset', sql`${t.dataset} IN ('real','demo')`),
+    check('roster_template_slot', sql`${t.slot} IN ('A','B')`),
   ],
 );

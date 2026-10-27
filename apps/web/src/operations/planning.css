@@ -271,6 +271,14 @@
   gap: 16px;
   margin-bottom: 24px;
 }
+.roster-basis-summary,
+.roster-sequence {
+  margin: 12px 0 20px;
+  padding-left: 24px;
+  color: var(--cop-muted);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
 .roster-agenda-filters .report-check {
   min-height: 44px;
 }

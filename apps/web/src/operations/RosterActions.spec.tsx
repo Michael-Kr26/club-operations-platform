@@ -17,6 +17,7 @@ afterEach(() => {
 const template: RosterTemplateSummary = {
   id: 'basis',
   locationId: 'achterveld',
+  slot: 'A',
   version: 3,
   sourceWeek: '2026-10-26',
   shiftCount: 5,
@@ -28,7 +29,7 @@ function props() {
     dataset: 'demo' as const,
     location: 'achterveld',
     weekStart: '2026-10-26',
-    template,
+    templates: [template],
     copySource: null,
     closeCopy: vi.fn(),
     refresh: vi.fn(async () => {}),
@@ -88,15 +89,16 @@ it('bewaart de zichtbare basisweek met de versie die bij openen is bekeken', asy
   const view = render(<RosterActions {...input} />);
   fireEvent.click(screen.getByRole('button', { name: 'Basisrooster bewaren' }));
   view.rerender(
-    <RosterActions {...input} template={{ ...template, version: 4 }} />,
+    <RosterActions {...input} templates={[{ ...template, version: 4 }]} />,
   );
   fireEvent.click(screen.getByRole('button', { name: 'Bewaar deze week' }));
-  await screen.findByText(/Basisrooster bewaard met 5 diensten/);
+  await screen.findByText(/Basisweek A bewaard met 5 diensten/);
   expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual({
     dataset: 'demo',
     locationId: 'achterveld',
     from: '2026-10-26',
     version: 3,
+    slot: 'A',
   });
 });
 it('plant het basisrooster meerdere weken vooruit als expliciete actie', async () => {
@@ -122,6 +124,8 @@ it('plant het basisrooster meerdere weken vooruit als expliciete actie', async (
     weekStart: '2026-11-02',
     weeks: 4,
     version: 3,
+    slot: 'A',
+    alternate: false,
   });
   expect(input.showWeek).toHaveBeenCalledWith('2026-11-02');
 });
@@ -134,7 +138,7 @@ it('vereist een concrete locatie en een bestaand basisrooster voor toepassen', (
   expect(
     screen.getByRole('button', { name: 'Basisrooster toepassen' }),
   ).toBeDisabled();
-  view.rerender(<RosterActions {...input} template={undefined} />);
+  view.rerender(<RosterActions {...input} templates={[]} />);
   expect(
     screen.getByRole('button', { name: 'Basisrooster bewaren' }),
   ).toBeEnabled();
@@ -163,4 +167,103 @@ it('meldt een geslaagde write ook als het ophalen van het overzicht mislukt', as
   expect(screen.getByRole('status')).toHaveTextContent(
     '5 diensten als concept toegevoegd',
   );
+});
+
+const templateB: RosterTemplateSummary = {
+  ...template,
+  id: 'basis-b',
+  slot: 'B',
+  version: 7,
+  shiftCount: 6,
+};
+it('bewaart week B apart en vergelijkt de versie van B, ook na opnieuw ophalen', async () => {
+  const input = { ...props(), templates: [template, templateB] };
+  const fetcher = vi
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValue(respond({ shiftCount: 5, version: 8 }));
+  const view = render(<RosterActions {...input} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Basisrooster bewaren' }));
+  fireEvent.change(
+    screen.getByRole('combobox', { name: 'Bewaren als basisweek' }),
+    { target: { value: 'B' } },
+  );
+  expect(
+    screen.getByText(/Dit vervangt alleen basisweek B/),
+  ).toBeInTheDocument();
+  view.rerender(
+    <RosterActions
+      {...input}
+      templates={[template, { ...templateB, version: 8 }]}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Bewaar deze week' }));
+  await screen.findByText(/Basisweek B bewaard/);
+  expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toMatchObject({
+    slot: 'B',
+    version: 7,
+  });
+});
+it('toont de afwisseling vanaf de gekozen eerste week en stuurt beide bekeken versies mee', async () => {
+  const input = { ...props(), templates: [template, templateB] };
+  const fetcher = vi
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValue(respond({ created: 22, skipped: 0 }));
+  const view = render(<RosterActions {...input} />);
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Basisrooster toepassen' }),
+  );
+  expect(
+    screen.getByRole('checkbox', { name: 'Week A en B afwisselen' }),
+  ).toBeChecked();
+  fireEvent.change(screen.getByRole('combobox', { name: 'Eerste basisweek' }), {
+    target: { value: 'B' },
+  });
+  fireEvent.change(screen.getByLabelText('Aantal weken'), {
+    target: { value: '4' },
+  });
+  expect(
+    screen.getByRole('list', { name: 'Geplande weekvolgorde' }).textContent,
+  ).toBe(
+    'Vanaf 2026-11-02: week BVanaf 2026-11-09: week AVanaf 2026-11-16: week BVanaf 2026-11-23: week A',
+  );
+  view.rerender(
+    <RosterActions
+      {...input}
+      templates={[
+        { ...template, version: 4 },
+        { ...templateB, version: 8 },
+      ]}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Weken klaarzetten' }));
+  await screen.findByText(/22 diensten als concept toegevoegd/);
+  expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toMatchObject({
+    slot: 'B',
+    version: 7,
+    otherVersion: 3,
+    alternate: true,
+    weeks: 4,
+  });
+});
+it('kan alleen B herhalen en schakelt afwisselen uit zolang A ontbreekt', async () => {
+  const fetcher = vi
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValue(respond({ created: 6, skipped: 0 }));
+  render(<RosterActions {...props()} templates={[templateB]} />);
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Basisrooster toepassen' }),
+  );
+  expect(
+    screen.getByRole('combobox', { name: 'Eerste basisweek' }),
+  ).toHaveValue('B');
+  expect(
+    screen.getByRole('checkbox', { name: 'Week A en B afwisselen' }),
+  ).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Weken klaarzetten' }));
+  await screen.findByText(/6 diensten als concept toegevoegd/);
+  expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toMatchObject({
+    slot: 'B',
+    version: 7,
+    alternate: false,
+  });
 });

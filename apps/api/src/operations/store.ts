@@ -23,6 +23,7 @@ import type {
   RosterTemplateEntry,
   RosterTemplateSummary,
   RosterCopyResult,
+  RosterWeek,
 } from '@cop/contracts';
 import { dateOnly } from '../reporting/calculation.js';
 
@@ -127,7 +128,7 @@ export class OperationsStore {
     operationScope(principal, org.id);
     choice(dataset, ['real', 'demo']);
     const rows = await this.pool.query(
-      'SELECT id,location_id,version,source_week,jsonb_array_length(entries) AS shift_count,updated_at FROM operation_roster_templates WHERE organization_id=$1 AND dataset=$2 AND ($3::text[] IS NULL OR location_id=ANY($3)) ORDER BY location_id',
+      'SELECT id,location_id,slot,version,source_week,jsonb_array_length(entries) AS shift_count,updated_at FROM operation_roster_templates WHERE organization_id=$1 AND dataset=$2 AND ($3::text[] IS NULL OR location_id=ANY($3)) ORDER BY location_id,slot',
       [org.id, dataset, principal.locations],
     );
     return rows.rows
@@ -135,6 +136,7 @@ export class OperationsStore {
       .map((row) => ({
         id: row.id,
         locationId: row.location_id,
+        slot: row.slot,
         version: row.version,
         sourceWeek: row.source_week,
         shiftCount: row.shift_count,
@@ -276,10 +278,12 @@ export class OperationsStore {
       locationId: string;
       from: string;
       version: number;
+      slot?: RosterWeek;
     },
   ) {
     if (!body) throw new BadRequestException('Basisrooster ontbreekt.');
     const from = this.rosterWeek(body.from);
+    const slot = choice(body.slot === undefined ? 'A' : body.slot, ['A', 'B']);
     locationScope(principal, org, body.locationId);
     if (!Number.isInteger(body.version) || body.version < 0)
       throw new BadRequestException('Versienummer ontbreekt.');
@@ -289,8 +293,8 @@ export class OperationsStore {
       body.dataset,
       async (client) => {
         const previous = await client.query(
-          'SELECT id,version FROM operation_roster_templates WHERE organization_id=$1 AND dataset=$2 AND location_id=$3 FOR UPDATE',
-          [org.id, body.dataset, body.locationId],
+          'SELECT id,version FROM operation_roster_templates WHERE organization_id=$1 AND dataset=$2 AND location_id=$3 AND slot=$4 FOR UPDATE',
+          [org.id, body.dataset, body.locationId, slot],
         );
         if ((previous.rows[0]?.version ?? 0) !== body.version)
           throw new ConflictException(
@@ -322,7 +326,7 @@ export class OperationsStore {
         });
         const id = previous.rows[0]?.id ?? randomUUID();
         await client.query(
-          'INSERT INTO operation_roster_templates(id,organization_id,dataset,location_id,source_week,entries,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(organization_id,dataset,location_id) DO UPDATE SET source_week=excluded.source_week,entries=excluded.entries,version=operation_roster_templates.version+1,updated_at=now(),updated_by=excluded.updated_by',
+          'INSERT INTO operation_roster_templates(id,organization_id,dataset,location_id,source_week,entries,updated_by,slot) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(organization_id,dataset,location_id,slot) DO UPDATE SET source_week=excluded.source_week,entries=excluded.entries,version=operation_roster_templates.version+1,updated_at=now(),updated_by=excluded.updated_by',
           [
             id,
             org.id,
@@ -331,6 +335,7 @@ export class OperationsStore {
             from,
             JSON.stringify(entries),
             principal.userId,
+            slot,
           ],
         );
         await client.query(
@@ -346,10 +351,11 @@ export class OperationsStore {
               dataset: body.dataset,
               version: body.version + 1,
               shiftCount: entries.length,
+              slot,
             }),
           ],
         );
-        return { shiftCount: entries.length, version: body.version + 1 };
+        return { shiftCount: entries.length, version: body.version + 1, slot };
       },
     );
   }
@@ -362,10 +368,19 @@ export class OperationsStore {
       weekStart: string;
       weeks: number;
       version: number;
+      slot?: RosterWeek;
+      alternate?: boolean;
+      otherVersion?: number;
     },
   ): Promise<RosterCopyResult> {
     if (!body) throw new BadRequestException('Basisrooster ontbreekt.');
     const start = this.rosterWeek(body.weekStart);
+    const firstSlot = choice(body.slot === undefined ? 'A' : body.slot, [
+      'A',
+      'B',
+    ]);
+    if (body.alternate !== undefined && typeof body.alternate !== 'boolean')
+      throw new BadRequestException('Kies of de basisweken afwisselen.');
     locationScope(principal, org, body.locationId);
     if (!Number.isInteger(body.weeks) || body.weeks < 1 || body.weeks > 12)
       throw new BadRequestException('Kies 1 tot 12 weken vooruit.');
@@ -375,21 +390,31 @@ export class OperationsStore {
       body.dataset,
       async (client) => {
         const found = await client.query(
-          'SELECT id,version,entries FROM operation_roster_templates WHERE organization_id=$1 AND dataset=$2 AND location_id=$3',
+          'SELECT id,slot,version,entries FROM operation_roster_templates WHERE organization_id=$1 AND dataset=$2 AND location_id=$3',
           [org.id, body.dataset, body.locationId],
         );
-        if (!found.rows[0])
-          throw new NotFoundException(
-            'Bewaar eerst een basisrooster voor deze locatie.',
-          );
-        const template = found.rows[0];
-        if (template.version !== body.version)
-          throw new ConflictException(
-            'Het basisrooster is gewijzigd. Vernieuw het overzicht.',
-          );
-        const entries = template.entries as RosterTemplateEntry[];
+        const otherSlot = firstSlot === 'A' ? 'B' : 'A';
+        const requiredSlots = body.alternate
+          ? [firstSlot, otherSlot]
+          : [firstSlot];
+        for (const slot of requiredSlots) {
+          const template = found.rows.find((row) => row.slot === slot);
+          if (!template)
+            throw new NotFoundException(
+              `Bewaar eerst basisweek ${slot} voor deze locatie.`,
+            );
+          const expected =
+            slot === firstSlot ? body.version : body.otherVersion;
+          if (template.version !== expected)
+            throw new ConflictException(
+              `Basisweek ${slot} is gewijzigd. Vernieuw het overzicht.`,
+            );
+        }
         const result = { created: 0, skipped: 0 };
         for (let week = 0; week < body.weeks; week++) {
+          const slot = body.alternate && week % 2 === 1 ? otherSlot : firstSlot;
+          const template = found.rows.find((row) => row.slot === slot)!;
+          const entries = template.entries as RosterTemplateEntry[];
           const from = this.addDays(start, week * 7);
           const slots = entries.map((entry) => ({
             entry,

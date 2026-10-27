@@ -25,7 +25,7 @@ export const implementationPlan = [
       'Gebouwd: weekoverzicht per medewerker (stijl 1), locaties koppelen via Team en slepen naar de eigen roosterrij met aansluitend de diensttijden invullen.',
       'Gebouwd: diensttypen Allround, Gastheer, Clubmanager en Stage, een mobiele agenda en een licht/donker-schakelaar.',
       'Persoonlijke medewerkerslogin, beschikbaarheid en wisselaanvragen nog uitwerken; daarna de navigatie herzien.',
-      'Gebouwd: losse diensten kopiëren en per locatie een vast basisrooster bewaren en voor maximaal 12 weken als concept klaarzetten. Weekaanpassingen blijven behouden.',
+      'Gebouwd: losse diensten kopiëren en per locatie basisweek A en B bewaren. Deze kunnen afwisselend voor maximaal 12 weken als concept worden klaargezet. Weekaanpassingen blijven behouden.',
       'Verlof, ziekte, open diensten en contracturen uitwerken.',
       'Het bestaande Excelrooster onderzoeken voor import, met locatie- en afwezigheidskleuren.',
       'Taken, controles en onderhoud verbeteren met praktijkfeedback.',

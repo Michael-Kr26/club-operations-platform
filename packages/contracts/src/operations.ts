@@ -100,9 +100,11 @@ export interface OperationsWorkspace {
   reports: ForecastDashboard | null;
   warnings: string[];
 }
+export type RosterWeek = 'A' | 'B';
 export interface RosterTemplateSummary {
   id: string;
   locationId: string;
+  slot: RosterWeek;
   version: number;
   sourceWeek: string;
   shiftCount: number;
